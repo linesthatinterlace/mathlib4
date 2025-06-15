@@ -139,6 +139,7 @@ lemma pointed_toConvexCone (C : ProperCone R E) : (C : ConvexCone R E).Pointed :
 
 protected lemma nonempty (C : ProperCone R E) : (C : Set E).Nonempty := C.toSubmodule.nonempty
 protected lemma isClosed (C : ProperCone R E) : IsClosed (C : Set E) := C.isClosed'
+protected lemma convex (C : ProperCone R E) : Convex R (C : Set E) := C.toPointedCone.convex
 
 protected nonrec lemma smul_mem (C : ProperCone R E) (hx : x ∈ C) (hr : 0 ≤ r) : r • x ∈ C :=
   C.smul_mem ⟨r, hr⟩ hx
