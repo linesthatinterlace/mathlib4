@@ -311,3 +311,43 @@ theorem inl_injective : Function.Injective (PSum.inl : α → α ⊕' β) := fun
 theorem inr_injective : Function.Injective (PSum.inr : β → α ⊕' β) := fun _ _ ↦ inr.inj
 
 end PSum
+
+namespace Function
+
+variable {f : α → β ⊕ γ} {a : α}
+
+def isLeft (f : α → β ⊕ γ) := ∀ a, (f a).isLeft
+
+namespace isLeft
+
+theorem apply_isLeft (hf : f.isLeft) : (f a).isLeft := hf _
+
+def leftSep (hf : f.isLeft) (a : α) : β := (f a).getLeft hf.apply_isLeft
+
+theorem inl_leftSep (hf : f.isLeft) : Sum.inl (hf.leftSep a) = f a := Sum.inl_getLeft _ _
+
+end isLeft
+
+def isRight (f : α → β ⊕ γ) := ∀ a, (f a).isRight
+
+namespace isRight
+
+theorem apply_isRight (hf : f.isRight) : (f a).isRight := hf _
+
+def rightSep (hf : f.isRight) (a : α) : γ := (f a).getRight hf.apply_isRight
+
+theorem inr_rightSep (hf : f.isRight) : Sum.inr (hf.rightSep a) = f a := Sum.inr_getRight _ _
+
+end isRight
+
+theorem isLeft_inl_comp (f : α → β) : (Sum.inl (β := γ) ∘ f).isLeft := fun _ => rfl
+
+theorem isRight_inr_comp (f : α → γ) : (Sum.inr (α := β) ∘ f).isRight := fun _ => rfl
+
+theorem rightSep_inr_comp {f : α → γ} : (isRight_inr_comp (β := β) f).rightSep = f :=
+  funext fun _ => rfl
+
+theorem leftSep_inl_comp {f : α → β} : (isLeft_inl_comp (γ := γ) f).leftSep = f :=
+  funext fun _ => rfl
+
+end Function
