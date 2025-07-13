@@ -38,7 +38,7 @@ concept, formal concept analysis, intent, extend, attribute
 
 open Function OrderDual Set
 
-variable {ι : Sort*} {α β : Type*} {κ : ι → Sort*} (r : α → β → Prop) {s : Set α} {t : Set β}
+variable {ι : Sort*} {α β γ : Type*} {κ : ι → Sort*} (r : α → β → Prop) {s : Set α} {t : Set β}
 
 /-! ### Lower and upper polars -/
 
@@ -61,12 +61,22 @@ alias extentClosure := lowerPolar
 
 variable {r}
 
+@[simp]
+theorem subset_lowerPolar (h : t ⊆ upperPolar r s) : s ⊆ lowerPolar r t :=
+  fun _ ha _ hb => h hb ha
+
+@[simp]
+theorem subset_upperPolar (h : s ⊆ lowerPolar r t) : t ⊆ upperPolar r s :=
+  fun _ ha _ hb => h hb ha
+
 theorem subset_upperPolar_iff_subset_lowerPolar :
-    t ⊆ upperPolar r s ↔ s ⊆ lowerPolar r t :=
-  ⟨fun h _ ha _ hb => h hb ha, fun h _ hb _ ha => h ha hb⟩
+    t ⊆ upperPolar r s ↔ s ⊆ lowerPolar r t := by constructor <;> intro h <;> simp [h]
 
 @[deprecated (since := "2025-07-10")]
 alias subset_intentClosure_iff_subset_extentClosure := subset_upperPolar_iff_subset_lowerPolar
+
+theorem subset_lowerPolar_iff_subset_upperPolar :
+    s ⊆ lowerPolar r t ↔ t ⊆ upperPolar r s := by constructor <;> intro h <;> simp [h]
 
 variable (r)
 
@@ -149,6 +159,12 @@ theorem lowerPolar_iUnion₂ (f : ∀ i, κ i → Set β) :
 @[deprecated (since := "2025-07-10")]
 alias extentClosure_iUnion₂ := lowerPolar_iUnion₂
 
+theorem lowerPolar_biUnion (S : Set γ) (f : γ → Set β) :
+    lowerPolar r (⋃ i ∈ S, f i) = ⋂ i ∈ S, lowerPolar r (f i) := lowerPolar_iUnion₂ _ _
+
+theorem upperPolar_biUnion (S : Set γ) (f : γ → Set α) :
+    upperPolar r (⋃ i ∈ S, f i) = ⋂ i ∈ S, upperPolar r (f i) := upperPolar_iUnion₂ _ _
+
 theorem subset_lowerPolar_upperPolar (s : Set α) :
     s ⊆ lowerPolar r (upperPolar r s) :=
   (gc_upperPolar_lowerPolar r).le_u_l _
@@ -179,17 +195,24 @@ theorem lowerPolar_upperPolar_lowerPolar (t : Set β) :
 @[deprecated (since := "2025-07-10")]
 alias extentClosure_intentClosure_extentClosure := lowerPolar_upperPolar_lowerPolar
 
-theorem upperPolar_anti : Antitone (upperPolar r) :=
+theorem upperPolar_antitone {r : α → β → Prop} : Antitone (upperPolar r) :=
   (gc_upperPolar_lowerPolar r).monotone_l
 
-@[deprecated (since := "2025-07-10")]
-alias intentClosure_anti := upperPolar_anti
-
-theorem lowerPolar_anti : Antitone (lowerPolar r) :=
-  upperPolar_anti _
+@[simp]
+theorem upperPolar_anti {r : α → β → Prop} {s'} (h : s ⊆ s') : upperPolar r s' ⊆ upperPolar r s :=
+  upperPolar_antitone h
 
 @[deprecated (since := "2025-07-10")]
-alias extentClosure_anti := lowerPolar_anti
+alias intentClosure_anti := upperPolar_antitone
+
+theorem lowerPolar_antitone {r : α → β → Prop} : Antitone (lowerPolar r) := upperPolar_antitone
+
+@[simp]
+theorem lowerPolar_anti {r : α → β → Prop} {t'} (h : t ⊆ t') :
+  lowerPolar r t' ⊆ lowerPolar r t := upperPolar_anti h
+
+@[deprecated (since := "2025-07-10")]
+alias extentClosure_anti := lowerPolar_antitone
 
 /-! ### Concepts -/
 
@@ -292,9 +315,9 @@ alias fst_ssubset_fst_iff := extent_ssubset_extent_iff
 theorem intent_subset_intent_iff : c.intent ⊆ d.intent ↔ d ≤ c := by
   refine ⟨fun h => ?_, fun h => ?_⟩
   · rw [← extent_subset_extent_iff, ← c.lowerPolar_intent, ← d.lowerPolar_intent]
-    exact lowerPolar_anti _ h
+    exact lowerPolar_anti h
   · rw [← c.upperPolar_extent, ← d.upperPolar_extent]
-    exact upperPolar_anti _ h
+    exact upperPolar_anti h
 
 @[deprecated (since := "2025-07-10")]
 alias snd_subset_snd_iff := intent_subset_intent_iff
