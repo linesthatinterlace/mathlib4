@@ -214,8 +214,162 @@ theorem lowerPolar_anti {r : α → β → Prop} {t'} (h : t ⊆ t') :
 @[deprecated (since := "2025-07-10")]
 alias extentClosure_anti := lowerPolar_antitone
 
-/-! ### Concepts -/
+namespace Set
 
+@[irreducible]
+def IsExtent (r : α → β → Prop) (s : Set α) := lowerPolar r (upperPolar r s) = s
+
+section IsExtent
+
+variable {r : α → β → Prop}
+
+theorem isExtent_iff_lowerPolar_upperPolar_eq :
+    s.IsExtent r ↔ lowerPolar r (upperPolar r s) = s := by
+  unfold IsExtent
+  exact Iff.rfl
+
+@[simp]
+theorem IsExtent.lowerPolar_upperPolar_eq (hs : s.IsExtent r) :
+    lowerPolar r (upperPolar r s) = s := isExtent_iff_lowerPolar_upperPolar_eq.mp hs
+
+theorem isExtent_of_lowerPolar_upperPolar_eq (hs : lowerPolar r (upperPolar r s) = s) :
+    s.IsExtent r := isExtent_iff_lowerPolar_upperPolar_eq.mpr hs
+
+theorem isExtent_iff_exists_lowerPolar_eq :
+    s.IsExtent r ↔ ∃ t, lowerPolar r t = s :=
+  ⟨fun hs => ⟨upperPolar r s, hs.lowerPolar_upperPolar_eq⟩,
+    fun ⟨t, h⟩ => isExtent_of_lowerPolar_upperPolar_eq <| h ▸ lowerPolar_upperPolar_lowerPolar r t⟩
+
+theorem IsExtent.exists_lowerPolar_eq (hs : s.IsExtent r) :
+    ∃ t, lowerPolar r t = s := isExtent_iff_exists_lowerPolar_eq.mp hs
+
+theorem isExtent_of_lowerPolar_eq (t) (hs : lowerPolar r t = s) :
+    s.IsExtent r := isExtent_iff_exists_lowerPolar_eq.mpr ⟨_, hs⟩
+
+theorem isExtent_lowerPolar (t : Set β) : (lowerPolar r t).IsExtent r :=
+  isExtent_of_lowerPolar_eq _ rfl
+
+theorem isExtent_iff_lowerPolar_upperPolar_le :
+    s.IsExtent r ↔ lowerPolar r (upperPolar r s) ≤ s :=
+  isExtent_iff_lowerPolar_upperPolar_eq.trans (subset_lowerPolar_upperPolar r s).ge_iff_eq'.symm
+
+theorem IsExtent.lowerPolar_upperPolar_le (hs : s.IsExtent r) :
+    lowerPolar r (upperPolar r s) ≤ s := isExtent_iff_lowerPolar_upperPolar_le.mp hs
+
+theorem isExtent_of_lowerPolar_upperPolar_le (hs : lowerPolar r (upperPolar r s) ≤ s) :
+    s.IsExtent r := isExtent_iff_lowerPolar_upperPolar_le.mpr hs
+
+@[simp]
+theorem IsExtent.lowerPolar_subset (hs : IsExtent r s) (h : upperPolar r s ⊆ t) :
+    lowerPolar r t ⊆ s := by
+  rcases hs.exists_lowerPolar_eq with ⟨t, rfl⟩
+  exact lowerPolar_anti <| (subset_upperPolar_lowerPolar r t).trans h
+
+@[simp]
+theorem isExtent_univ : univ.IsExtent r := isExtent_of_lowerPolar_eq ∅ (lowerPolar_empty r)
+
+@[simp]
+theorem IsExtent.inter {s' : Set α} (hs : s.IsExtent r) (hs' : s'.IsExtent r) :
+    (s ∩ s').IsExtent r := isExtent_of_lowerPolar_eq (upperPolar r s ∪ upperPolar r s') <| by
+  simp only [lowerPolar_union, hs, lowerPolar_upperPolar_eq, hs']
+
+theorem isExtent_iInter (f : ι → Set α) (hs : ∀ i, (f i).IsExtent r) : (⋂ i, f i).IsExtent r := by
+  apply isExtent_of_lowerPolar_eq (⋃ i, upperPolar r (f i))
+  simp only [lowerPolar_iUnion, hs, IsExtent.lowerPolar_upperPolar_eq]
+
+theorem isExtent_iInter₂ (f : ∀ i, κ i → Set α) (hf : ∀ i j, (f i j).IsExtent r) :
+    (⋂ (i) (j), f i j).IsExtent r := by
+  apply isExtent_of_lowerPolar_eq (⋃ (i) (j), upperPolar r (f i j))
+  simp only [lowerPolar_iUnion, hf, IsExtent.lowerPolar_upperPolar_eq]
+
+@[simp]
+theorem isExtent_biInter (S : Set γ) (f : γ → Set α) (hf : ∀ i ∈ S, (f i).IsExtent r) :
+    (⋂ i ∈ S, f i).IsExtent r := isExtent_iInter₂ _ hf
+
+end IsExtent
+
+@[irreducible]
+def IsIntent (r : α → β → Prop) (t : Set β) := upperPolar r (lowerPolar r t) = t
+
+section IsIntent
+
+variable {r : α → β → Prop}
+
+theorem isIntent_iff_upperPolar_lowerPolar_eq :
+    IsIntent r t ↔ upperPolar r (lowerPolar r t) = t := by
+  unfold IsIntent
+  exact Iff.rfl
+
+@[simp]
+theorem IsIntent.upperPolar_lowerPolar_eq (hs : IsIntent r t) :
+    upperPolar r (lowerPolar r t) = t := isIntent_iff_upperPolar_lowerPolar_eq.mp hs
+
+theorem isIntent_of_upperPolar_lowerPolar_eq (hs : upperPolar r (lowerPolar r t) = t) :
+    IsIntent r t := isIntent_iff_upperPolar_lowerPolar_eq.mpr hs
+
+theorem isIntent_iff_exists_upperPolar_eq :
+    IsIntent r t ↔ ∃ s, upperPolar r s = t :=
+  ⟨fun hs => ⟨lowerPolar r t, hs.upperPolar_lowerPolar_eq⟩,
+    fun ⟨t, h⟩ => isIntent_of_upperPolar_lowerPolar_eq <| h ▸ upperPolar_lowerPolar_upperPolar r t⟩
+
+theorem IsIntent.exists_upperPolar_eq (hs : IsIntent r t) :
+    ∃ s, upperPolar r s = t := isIntent_iff_exists_upperPolar_eq.mp hs
+
+theorem isIntent_of_upperPolar_eq (s) (hs : upperPolar r s = t) :
+    t.IsIntent r := isIntent_iff_exists_upperPolar_eq.mpr ⟨_, hs⟩
+
+theorem isIntent_upperPolar (s : Set α) : IsIntent r (upperPolar r s) :=
+  isIntent_of_upperPolar_eq _ rfl
+
+theorem isIntent_iff_upperPolar_lowerPolar_le :
+    IsIntent r t ↔ upperPolar r (lowerPolar r t) ≤ t :=
+  isIntent_iff_upperPolar_lowerPolar_eq.trans (subset_upperPolar_lowerPolar r t).ge_iff_eq'.symm
+
+theorem IsIntent.upperPolar_lowerPolar_le (hs : IsIntent r t) :
+    upperPolar r (lowerPolar r t) ≤ t := isIntent_iff_upperPolar_lowerPolar_le.mp hs
+
+theorem isIntent_of_upperPolar_lowerPolar_le (hs : upperPolar r (lowerPolar r t) ≤ t) :
+    IsIntent r t := isIntent_iff_upperPolar_lowerPolar_le.mpr hs
+
+@[simp]
+theorem IsIntent.upperPolar_subset (ht : IsIntent r t) (h : lowerPolar r t ⊆ s) :
+    upperPolar r s ⊆ t := by
+  rcases ht.exists_upperPolar_eq with ⟨s, rfl⟩
+  exact lowerPolar_anti <| (subset_lowerPolar_upperPolar r s).trans h
+
+theorem IsIntent.lowerPolar_subset_iff_upperPolar_subset (hs : IsExtent r s) (ht : IsIntent r t) :
+    lowerPolar r t ⊆ s ↔ upperPolar r s ⊆ t :=
+  ⟨ht.upperPolar_subset, hs.lowerPolar_subset⟩
+
+theorem IsExtent.upperPolar_subset_iff_lowerPolar_subset (hs : IsExtent r s) (ht : IsIntent r t) :
+    upperPolar r s ⊆ t ↔ lowerPolar r t ⊆ s :=
+  ⟨hs.lowerPolar_subset, ht.upperPolar_subset⟩
+
+@[simp]
+theorem isIntent_univ : univ.IsIntent r := isIntent_of_upperPolar_eq ∅ (upperPolar_empty r)
+
+@[simp]
+theorem IsIntent.inter {t' : Set β} (hs : t.IsIntent r) (hs' : t'.IsIntent r) :
+    (t ∩ t').IsIntent r := isIntent_of_upperPolar_eq (lowerPolar r t ∪ lowerPolar r t') <| by
+  simp only [upperPolar_union, hs, upperPolar_lowerPolar_eq, hs']
+
+theorem isIntent_iInter (f : ι → Set β) (hs : ∀ i, (f i).IsIntent r) : (⋂ i, f i).IsIntent r := by
+  apply isIntent_of_upperPolar_eq (⋃ i, lowerPolar r (f i))
+  simp only [upperPolar_iUnion, hs, IsIntent.upperPolar_lowerPolar_eq]
+
+theorem isIntent_iInter₂ (f : ∀ i, κ i → Set β) (hf : ∀ i j, (f i j).IsIntent r) :
+    (⋂ (i) (j), f i j).IsIntent r := by
+  apply isIntent_of_upperPolar_eq (⋃ (i) (j), lowerPolar r (f i j))
+  simp only [upperPolar_iUnion, hf, IsIntent.upperPolar_lowerPolar_eq]
+
+theorem isIntent_biInter (S : Set γ) (f : γ → Set β) (hf : ∀ i ∈ S, (f i).IsIntent r) :
+    (⋂ i ∈ S, f i).IsIntent r := isIntent_iInter₂ _ hf
+
+end IsIntent
+
+end Set
+
+/-! ### Concepts -/
 
 variable (α β)
 
