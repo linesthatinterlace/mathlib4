@@ -369,6 +369,149 @@ end IsIntent
 
 end Set
 
+
+
+structure Extent (r : α → β → Prop) where
+  private mk ::
+  protected toSet : Set α
+  protected isExtent : IsExtent r toSet
+
+attribute [simp] Extent.isExtent
+
+@[simps!]
+def Set.IsExtent.extent {r : α → β → Prop} (hs : s.IsExtent r) : Extent r := ⟨s, hs⟩
+
+namespace Extent
+
+variable {r : α → β → Prop} {s s' : Extent r} {t t' : Set β}
+
+@[ext] protected theorem ext (h : s.toSet = s'.toSet) : s = s' := by
+  cases s; cases s'; cases h; rfl
+
+theorem toSet_injective : Injective (Extent.toSet (r := r)) := fun _ _ => Extent.ext
+
+@[simps!]
+protected def ofSet (t : Set β) : Extent r := (isExtent_lowerPolar t).extent
+
+theorem ofSet_surjective : Surjective (Extent.ofSet (r := r)) :=
+  fun s => ⟨upperPolar r s.toSet, Extent.ext s.isExtent.lowerPolar_upperPolar_eq⟩
+
+instance : CompleteLattice (Extent r) := {
+  PartialOrder.lift _ toSet_injective with
+  le c d := c.toSet ⊆ d.toSet
+  sup c d := Extent.ofSet (upperPolar r c.toSet ∩ upperPolar r d.toSet)
+  bot := Extent.ofSet univ
+  sSup S := Extent.ofSet (⋂ s ∈ S, upperPolar r s.toSet)
+  inf c d := (c.isExtent.inter d.isExtent).extent
+  sInf S := (isExtent_biInter S _ (fun s _ => s.isExtent)).extent
+  top := isExtent_univ.extent
+  sup_le _ _ _ h₁ h₂ := by simp [h₁, h₂]
+  le_inf _ _ _ h₁ h₂ := by simp [h₁, h₂]
+  le_sup_left := by simp
+  le_sup_right := by simp
+  inf_le_left := by simp
+  inf_le_right := by simp
+  le_top := by simp
+  bot_le := by simp
+  le_sInf := by simp
+  sInf_le _ := iInter₂_subset
+  le_sSup _ _ h := by simp [iInter₂_subset, h]
+  sSup_le S s h₁ := s.isExtent.lowerPolar_subset <| Set.subset_iInter₂ <|
+    forall₂_imp (fun _ _ => upperPolar_anti) h₁ }
+
+theorem toSet_monotone : Monotone (Extent.toSet (r := r)) := fun _ _ => id
+
+@[simp]
+theorem toSet_subset_toSet_iff_le : s.toSet ⊆ s'.toSet ↔ s ≤ s' := Iff.rfl
+
+theorem toSet_strictMono : StrictMono (Extent.toSet (r := r)) :=
+  toSet_monotone.strictMono_of_injective toSet_injective
+
+theorem ofSet_antitone : Antitone (Extent.ofSet (r := r)) := fun _ _ => lowerPolar_anti
+
+@[simp]
+theorem ofSet_le_ofSet_iff_subset (ht : IsIntent r t) :
+    Extent.ofSet t (r := r) ≤ Extent.ofSet t' ↔ t' ⊆ t := by
+  simp_rw [← toSet_subset_toSet_iff_le, ofSet_toSet,
+    subset_lowerPolar_iff_subset_upperPolar, ht.upperPolar_lowerPolar_eq]
+
+end Extent
+
+structure Intent (r : α → β → Prop) where
+  private mk ::
+  protected toSet : Set β
+  protected isIntent : IsIntent r toSet
+
+attribute [simp] Intent.isIntent
+
+@[simps!]
+protected def Set.IsIntent.intent {r : α → β → Prop} (ht : t.IsIntent r) : Intent r := ⟨_, ht⟩
+
+namespace Intent
+
+variable {r : α → β → Prop} {t t' : Intent r} {s s' : Set α}
+
+@[simps!]
+protected def ofSet (s : Set α) : Intent r := (isIntent_upperPolar s).intent
+
+@[ext] protected theorem ext (h : t.toSet = t'.toSet) : t = t' := by
+  cases t; cases t'; cases h; rfl
+
+theorem toSet_injective : Injective (Intent.toSet (r := r)) := fun _ _ => Intent.ext
+
+theorem ofSet_surjective : Surjective (Intent.ofSet (r := r)) :=
+  fun t => ⟨lowerPolar r t.toSet, Intent.ext t.isIntent.upperPolar_lowerPolar_eq⟩
+
+instance : CompleteLattice (Intent r) := {
+  PartialOrder.lift _ (toDual.injective.comp toSet_injective) with
+  le c d := d.toSet ⊆ c.toSet
+  sup c d := (c.isIntent.inter d.isIntent).intent
+  bot := isIntent_univ.intent
+  sSup S := (isIntent_biInter S _ (fun s _ => s.isIntent)).intent
+  inf c d := Intent.ofSet (lowerPolar r c.toSet ∩ lowerPolar r d.toSet)
+  sInf S := Intent.ofSet (⋂ s ∈ S, lowerPolar r s.toSet)
+  top := Intent.ofSet univ
+  sup_le _ _ _ h₁ h₂ := by simp [h₁, h₂]
+  le_inf _ _ _ h₁ h₂ := by simp [h₁, h₂]
+  le_sup_left _ _ := by simp
+  le_sup_right := by simp
+  inf_le_left := by simp
+  inf_le_right := by simp
+  le_top := by simp
+  bot_le := by simp
+  sSup_le := by simp
+  le_sSup _ := iInter₂_subset
+  sInf_le _ _ h := by simp [iInter₂_subset, h]
+  le_sInf S t h₁ := t.isIntent.upperPolar_subset <| Set.subset_iInter₂ <|
+    forall₂_imp (fun _ _ => lowerPolar_anti) h₁ }
+
+theorem toSet_antitone : Antitone (Intent.toSet (r := r)) := fun _ _ => id
+
+theorem toSet_strictAnti : StrictAnti (Intent.toSet (r := r)) :=
+  toSet_antitone.strictAnti_of_injective toSet_injective
+
+@[simp]
+theorem toSet_subset_toSet_iff_le : t.toSet ⊆ t'.toSet ↔ t' ≤ t := Iff.rfl
+
+theorem ofSet_monotone : Monotone (Intent.ofSet (r := r)) := fun _ _ => upperPolar_anti
+
+@[simp]
+theorem ofSet_le_ofSet_iff_subset (hs : IsExtent r s) :
+    Intent.ofSet s' (r := r) ≤ Intent.ofSet s ↔ s' ⊆ s := by
+  simp_rw [← toSet_subset_toSet_iff_le, ofSet_toSet,
+    subset_upperPolar_iff_subset_lowerPolar, hs.lowerPolar_upperPolar_eq]
+
+end Intent
+
+@[simps!]
+def OrderIso.extentIntent : Extent r ≃o Intent r where
+  toFun := Intent.ofSet.comp Extent.toSet
+  invFun := Extent.ofSet.comp Intent.toSet
+  left_inv _ := Extent.ext <| by simp
+  right_inv _ := Intent.ext <| by simp
+  map_rel_iff' := by simp
+
+
 /-! ### Concepts -/
 
 variable (α β)
