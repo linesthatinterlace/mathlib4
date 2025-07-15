@@ -1253,6 +1253,131 @@ theorem binary_relation_sInf_iff {α β : Type*} (s : Set (α → β → Prop)) 
   rw [sInf_apply]
   simp
 
+namespace Subtype
+
+variable [CompleteLattice α]
+
+variable {p : α → Prop}
+
+section OrderBot
+
+def botVal [InfSet α] (p : α → Prop) := ⨅ a, ⨅ (_ : p a), a
+
+@[simp]
+theorem botVal_le {a : α} (ha : p a) : botVal p ≤ a := iInf₂_le _ ha
+
+@[simp]
+theorem botVal_le_val (a : Subtype p) : botVal p ≤ a := botVal_le a.prop
+
+theorem le_botVal_iff {b : α} : b ≤ botVal p ↔ ∀ a, p a → b ≤ a := le_iInf₂_iff
+
+theorem eq_botVal {b : α} (hb : p b) (hba : ∀ a, p a → b ≤ a) : b = botVal p :=
+  le_antisymm (le_botVal_iff.mpr hba) (botVal_le hb)
+
+theorem bot_eq_botVal_of_pos (h : p ⊥) : ⊥ = botVal p :=
+  eq_botVal h (fun _ _ => bot_le)
+
+theorem pos_botVal {b : α} (hb : p b) (hba : ∀ a, p a → b ≤ a) : p (botVal p) :=
+  eq_botVal hb hba ▸ hb
+
+theorem pos_botVal_iff_exists_isBot : p (botVal p) ↔ ∃ b, p b ∧ ∀ a, p a → b ≤ a :=
+  ⟨fun h => ⟨_, h, fun _ => botVal_le⟩, fun ⟨_, hb, hba⟩ => pos_botVal hb hba⟩
+
+protected abbrev orderBotOfComplete (hbot : p (botVal p)) : OrderBot (Subtype p) where
+  bot := ⟨_, hbot⟩
+  bot_le := botVal_le_val
+
+end OrderBot
+
+section SemilatticeInf
+
+def minVal [LE α] [SupSet α] (p : α → Prop) (x y : α) := ⨆ a, ⨆ (_ : p a ∧ a ≤ x ∧ a ≤ y), a
+
+variable {x y z b : α}
+
+@[simp]
+theorem minVal_le_left : minVal p x y ≤ x := by simp [minVal]; tauto
+
+@[simp]
+theorem minVal_le_right : minVal p x y ≤ y := by simp [minVal]
+
+theorem minVal_le_iff : minVal p x y ≤ z ↔ ∀ (i : α), p i → i ≤ x → i ≤ y → i ≤ z := by
+  simp [minVal]
+
+theorem le_minVal : ∀ z, p z → z ≤ x → z ≤ y → z ≤ minVal p x y := by rw [← minVal_le_iff]
+
+theorem minVal_le_min : minVal p x y ≤ x ⊓ y := le_inf minVal_le_left minVal_le_right
+
+theorem le_minVal_iff (hz : p z) : z ≤ minVal p x y ↔ z ≤ x ∧ z ≤ y :=
+  ⟨fun h => ⟨h.trans minVal_le_left, h.trans minVal_le_right⟩, fun h => le_minVal _ hz h.1 h.2⟩
+
+theorem eq_minVal (hb : p b) (hbx : b ≤ x) (hby : b ≤ y)
+    (hbxy : ∀ z, p z → z ≤ x → z ≤ y → z ≤ b) : b = minVal p x y :=
+  le_antisymm (le_minVal b hb hbx hby) (minVal_le_iff.mpr hbxy)
+
+theorem min_eq_minVal_of_pos (h : p (x ⊓ y)) : x ⊓ y = minVal p x y :=
+  eq_minVal h inf_le_left inf_le_right (fun _ _ => le_inf)
+
+theorem pos_minVal (hb : p b) (hbx : b ≤ x) (hby : b ≤ y)
+    (hbxy : ∀ z, p z → z ≤ x → z ≤ y → z ≤ b) : p (minVal p x y) :=
+  eq_minVal hb hbx hby hbxy ▸ hb
+
+theorem pos_minVal_iff_exists : p (minVal p x y) ↔ ∃ b, p b ∧ b ≤ x ∧ b ≤ y ∧
+      ∀ z, p z → z ≤ x → z ≤ y → z ≤ b := by
+  constructor
+  · intro h
+    refine ⟨_, h, minVal_le_left, minVal_le_right, le_minVal⟩
+  · rintro ⟨b, hb, hbx, hby, hbxy⟩
+    exact pos_minVal hb hbx hby hbxy
+
+protected abbrev semilatticeInfOfComplete (hmin : ∀ x y, p x → p y → p (minVal p x y)) :
+    SemilatticeInf (Subtype p) :=
+  { Subtype.partialOrder p with
+    inf x y := ⟨_, hmin x y x.prop y.prop⟩
+    inf_le_left := fun _ _ => minVal_le_left
+    inf_le_right := fun _ _ => minVal_le_right
+    le_inf := fun ⟨_, hz⟩ ⟨_, _⟩ ⟨_, _⟩ => le_minVal _ hz }
+
+end SemilatticeInf
+
+section CompleteSemilatticeInf
+
+def sInfVal [LE α] [InfSet α] (p : α → Prop) (s : Set α) := ⨅ a, ⨅ (_ : p a ∧ a ∈ s), a
+
+variable {s : Set α} {a b z : α}
+
+theorem le_sInfVal_iff : b ≤ sInfVal p s ↔ ∀ a, p a → a ∈ s → b ≤ a := by simp [sInfVal]
+
+theorem sInfVal_le_iff : sInfVal p s ≤ a ↔
+  (∀ (b : α), (∀ (i : α), p i → i ∈ s → b ≤ i) → b ≤ a) := by
+  simp [sInfVal, iInf_le_iff]
+
+theorem sInfVal_le (ha : p a) (has : a ∈ s) : sInfVal p s ≤ a :=
+  iInf₂_le _ ⟨ha, has⟩
+
+theorem le_sInfVal (hba : ∀ a, p a → a ∈ s → b ≤ a) : b ≤ sInfVal p s := le_sInfVal_iff.mpr hba
+
+theorem sInfVal_le_subtype {s : Set (Subtype p)} {a : Subtype p} (has : a ∈ s) :
+    sInfVal p (val '' s) ≤ a := sInfVal_le a.prop (Set.mem_image_of_mem _ has)
+
+theorem le_sInfVal_subtype {s : Set (Subtype p)}
+    (hba : ∀ a : Subtype p, a ∈ s → b ≤ a) : b ≤ sInfVal p (val '' s) := le_sInfVal <| by
+  refine fun _ ha has => hba ⟨_, ha⟩ ?_
+  rcases has with ⟨_, has, rfl⟩
+  exact has
+
+protected abbrev completeSemilatticeInfOfComplete
+    (hsinf : ∀ s : Set (Subtype p), p (sInfVal p (val '' s))) :
+    CompleteSemilatticeInf (Subtype p) :=
+  { Subtype.partialOrder p with
+    sInf _ := ⟨_, hsinf _⟩
+    sInf_le := fun _ _ => sInfVal_le_subtype
+    le_sInf := fun _ _ => le_sInfVal_subtype }
+
+end CompleteSemilatticeInf
+
+end Subtype
+
 section CompleteLattice
 
 variable [Preorder α] [CompleteLattice β] {s : Set (α → β)} {f : ι → α → β}
