@@ -115,23 +115,31 @@ theorem splitsAt_iff_apply_ge_iff_ge : e.SplitsAt n ↔ ∀ i, n ≤ e i ↔ n �
 theorem splitsAt_iff_apply_ge_of_ge : e.SplitsAt n ↔ ∀ i, n ≤ i → n ≤ e i := by
   simp_rw [splitsAt_iff_apply_ge_iff_ge, imp_perm_iff_perm_iff']
 
-theorem SplitsAt.apply_lt_iff_lt (he : e.SplitsAt n) : ∀ i, e i < n ↔ i < n :=
-  splitsAt_iff_apply_lt_iff_lt.mp he
-
-theorem SplitsAt.apply_ge_iff_ge (he : e.SplitsAt n) : ∀ i, n ≤ e i ↔ n ≤ i :=
-  splitsAt_iff_apply_ge_iff_ge.mp he
-
 theorem splitsAt_of_apply_lt_of_lt (h : ∀ i, i < n → e i < n) : e.SplitsAt n :=
   splitsAt_iff_apply_lt_of_lt.mpr h
-
-@[simp] theorem SplitsAt.apply_lt_of_lt (he : e.SplitsAt n) : ∀ i, i < n → e i < n :=
-  splitsAt_iff_apply_lt_of_lt.mp he
 
 theorem splitsAt_of_apply_ge_of_ge (h : ∀ i, n ≤ i → n ≤ e i) : e.SplitsAt n :=
   splitsAt_iff_apply_ge_of_ge.mpr h
 
-@[simp] theorem SplitsAt.apply_ge_of_ge (he : e.SplitsAt n) : ∀ i, n ≤ i → n ≤ e i :=
-  splitsAt_iff_apply_ge_of_ge.mp he
+@[simp]
+theorem SplitsAt.apply_lt_iff_lt (he : e.SplitsAt n) : ∀ i, e i < n ↔ i < n :=
+  splitsAt_iff_apply_lt_iff_lt.mp he
+
+@[simp]
+theorem SplitsAt.apply_ge_iff_ge (he : e.SplitsAt n) : ∀ i, n ≤ e i ↔ n ≤ i :=
+  splitsAt_iff_apply_ge_iff_ge.mp he
+
+theorem SplitsAt.apply_lt_of_lt (he : e.SplitsAt n) : ∀ i, i < n → e i < n := fun _ => by
+  simp_rw [he.apply_lt_iff_lt, imp_self]
+
+theorem SplitsAt.apply_ge_of_ge (he : e.SplitsAt n) : ∀ i, n ≤ i → n ≤ e i := fun _ => by
+  simp_rw [he.apply_ge_iff_ge, imp_self]
+
+theorem SplitsAt.lt_of_apply_lt (he : e.SplitsAt n) : ∀ i, e i < n → i < n := fun _ => by
+  simp_rw [he.apply_lt_iff_lt, imp_self]
+
+theorem SplitsAt.ge_of_apply_ge (he : e.SplitsAt n) : ∀ i, n ≤ e i → n ≤ i := fun _ => by
+  simp_rw [he.apply_ge_iff_ge, imp_self]
 
 theorem splitsAt_one : SplitsAt 1 n := splitsAt_of_apply_lt_of_lt (fun _  => id)
 
@@ -151,6 +159,96 @@ theorem splitsAt_zero : e.SplitsAt 0 :=
 
 end SplitsAt
 
+def SplitsAt.piecewise {e : Perm ℕ} {f : Perm ℕ} (he : e.SplitsAt n) (hf : f.SplitsAt n) :
+    Perm ℕ where
+  toFun i := if i < n then e i else f i
+  invFun i := if i < n then e⁻¹ i else f⁻¹ i
+  left_inv i := by
+    simp_rw [apply_ite ⇑e⁻¹, apply_ite ⇑f⁻¹, apply_ite (· < n), inv_apply_self,
+      he.apply_lt_iff_lt, hf.apply_lt_iff_lt, ite_self]
+    split_ifs <;> rfl
+  right_inv i := by
+    simp_rw [apply_ite ⇑e, apply_ite ⇑f, apply_ite (· < n), apply_inv_self,
+      he.inv.apply_lt_iff_lt, hf.inv.apply_lt_iff_lt, ite_self]
+    split_ifs <;> rfl
+
+section Piecewise
+
+variable {e f e' f' : Perm ℕ} {he : e.SplitsAt n} {hf : f.SplitsAt n}
+    {he' : e'.SplitsAt n} {hf' : f'.SplitsAt n}
+
+theorem piecewise_apply : he.piecewise hf i = if i < n then e i else f i := rfl
+theorem piecewise_symm_apply : (he.piecewise hf).symm i = if i < n then e⁻¹ i else f⁻¹ i := rfl
+
+@[simp] theorem piecewise_apply_of_lt : ∀ i, i < n → he.piecewise hf i = e i :=
+  fun _ hi => if_pos hi
+
+@[simp] theorem piecewise_apply_of_ge : ∀ i, n ≤ i → he.piecewise hf i = f i :=
+  fun _ hi => if_neg hi.not_gt
+
+@[simp] theorem splitsAt_piecewise (he : e.SplitsAt n) (hf : f.SplitsAt n) :
+    (he.piecewise hf).SplitsAt n := splitsAt_of_apply_lt_of_lt <|
+  fun _ hi => piecewise_apply_of_lt (he := he) (hf := hf) _ hi ▸ he.apply_lt_of_lt _ hi
+
+theorem piecewise_apply_fin {i : Fin n} : he.piecewise hf i = e i :=
+  piecewise_apply_of_lt _ i.isLt
+
+theorem piecewise_apply_add : he.piecewise hf (i + n) = f (i + n) :=
+  piecewise_apply_of_ge _ (Nat.le_add_left  _ _)
+
+@[simp]
+theorem piecewise_self : he.piecewise he = e := Equiv.ext fun _ => ite_self _
+
+theorem piecewise_one : splitsAt_one.piecewise splitsAt_one (n := n) = 1 := piecewise_self
+
+@[simp] theorem piecewise_inv (he : e⁻¹.SplitsAt n) (hf : f⁻¹.SplitsAt n) :
+    he.piecewise hf = (he.inv.piecewise hf.inv)⁻¹ := rfl
+
+theorem inv_piecewise : (he.piecewise hf)⁻¹ = he.inv.piecewise hf.inv := rfl
+
+@[simp] theorem piecewise_mul_piecewise : he.piecewise hf * he'.piecewise hf' =
+    (he.mul he').piecewise (hf.mul hf') := Equiv.ext <| fun _ => by
+  simp only [mul_apply, piecewise_apply, apply_ite (· < n), he'.apply_lt_iff_lt,
+    hf'.apply_lt_iff_lt]; split_ifs <;> rfl
+
+theorem piecewise_one_mul_piecewise_one :
+    he.piecewise splitsAt_one * he'.piecewise splitsAt_one =
+    (he.mul he').piecewise splitsAt_one := piecewise_mul_piecewise
+
+theorem one_piecewise_mul_one_piecewise :
+    splitsAt_one.piecewise he * splitsAt_one.piecewise he' =
+    splitsAt_one.piecewise (he.mul he') := piecewise_mul_piecewise
+
+@[simp] theorem piecewise_piecewise_left :
+    (splitsAt_piecewise he he').piecewise hf = he.piecewise hf :=
+  Equiv.ext <| fun _ => by simp_rw [piecewise_apply]; split_ifs <;> rfl
+
+@[simp] theorem piecewise_piecewise_right :
+    he.piecewise (splitsAt_piecewise he' hf)  = he.piecewise hf :=
+  Equiv.ext <| fun _ => by simp_rw [piecewise_apply]; split_ifs <;> rfl
+
+theorem piecewise_piecewise_piecewise :
+    (splitsAt_piecewise he hf').piecewise
+    (splitsAt_piecewise he' hf) = he.piecewise hf := by
+  simp only [piecewise_piecewise_left, piecewise_piecewise_right]
+
+theorem piecewise_piecewise_piecewise_self :
+    (splitsAt_piecewise he hf').piecewise (splitsAt_piecewise he' he) = e := by
+  simp only [piecewise_piecewise_piecewise, piecewise_self]
+
+@[simps! apply_fst_coe_apply apply_snd_coe_apply symm_apply_fst_coe_apply symm_apply_snd_coe_apply]
+def equivPiecewise (n : ℕ) : {e : Perm ℕ // e.SplitsAt n} × {e : Perm ℕ // e.SplitsAt n} ≃
+    {e : Perm ℕ // e.SplitsAt n} × {e : Perm ℕ // e.SplitsAt n} where
+  toFun := fun ⟨e, f⟩ => ⟨⟨_, splitsAt_piecewise e.2 f.2⟩, ⟨_, splitsAt_piecewise f.2 e.2⟩⟩
+  invFun := fun ⟨e, f⟩ => ⟨⟨_, splitsAt_piecewise e.2 f.2⟩, ⟨_, splitsAt_piecewise f.2 e.2⟩⟩
+  left_inv _ := by simp_rw [piecewise_piecewise_piecewise_self]
+  right_inv _ := by simp_rw [piecewise_piecewise_piecewise_self]
+
+end Piecewise
+
+abbrev SplitsAt.permBelow {e : Perm ℕ} (he : e.SplitsAt n) : Perm ℕ := he.piecewise splitsAt_one
+abbrev SplitsAt.permAbove {e : Perm ℕ} (he : e.SplitsAt n) : Perm ℕ := splitsAt_one.piecewise he
+
 @[irreducible] def FixedLT (e : Perm ℕ) (n : ℕ) := ∀ i, i < n → e i = i
 
 section FixedLT
@@ -168,6 +266,10 @@ instance : Decidable (e.FixedLT n) :=
 
 theorem fixedLT_of_apply_eq_self_of_lt (he : ∀ i, i < n → e i = i) : e.FixedLT n :=
   fixedLT_iff_apply_eq_self_of_lt.mpr he
+
+theorem FixedLT.apply (h : e.FixedLT n) : e i = if i < n then i else e i := by
+  rw [right_eq_ite_iff]
+  exact h.apply_eq_self_of_lt _
 
 @[simp] theorem FixedLT.splitsAt (h : e.FixedLT n) : e.SplitsAt n := by
   rw [fixedLT_iff_apply_eq_self_of_lt] at h
@@ -197,6 +299,20 @@ theorem FixedLT.conj_fixedLT_of_splitsAt (he : e.FixedLT n) (hf : f.SplitsAt n) 
 theorem SplitsAt.conj_fixedLT_of_fixedLT (he : e.FixedLT n) (hf : f.SplitsAt n) :
     (f * e * f⁻¹).FixedLT n := he.conj_fixedLT_of_splitsAt hf
 
+@[simp] theorem fixedLT_one_piecewise {he : e.SplitsAt n} :
+    (splitsAt_one.piecewise he).FixedLT n :=
+  fixedLT_of_apply_eq_self_of_lt piecewise_apply_of_lt
+
+@[simp] theorem FixedLT.piecewise_one (h : e.FixedLT n) :
+    h.splitsAt.piecewise splitsAt_one = 1 := Equiv.ext <| fun _ => by
+  rw [piecewise_apply, one_apply, h.apply]
+  split_ifs <;> rfl
+
+@[simp] theorem FixedLT.one_piecewise (h : e.FixedLT n) :
+    splitsAt_one.piecewise h.splitsAt = e := Equiv.ext <| fun _ => by
+  rw [piecewise_apply, one_apply, h.apply]
+  split_ifs <;> rfl
+
 end FixedLT
 
 @[irreducible] def FixedGE (e : Perm ℕ) (n : ℕ) := ∀ i, n ≤ i → e i = i
@@ -213,6 +329,10 @@ theorem fixedGE_iff_apply_eq_self_of_ge : e.FixedGE n ↔ ∀ i, n ≤ i → e i
 
 theorem fixedGE_of_apply_eq_self_of_ge (he : ∀ i, n ≤ i → e i = i) : e.FixedGE n :=
   fixedGE_iff_apply_eq_self_of_ge.mpr he
+
+theorem FixedGE.apply (h : e.FixedGE n) : e i = if i < n then e i else i := by
+  rw [left_eq_ite_iff]
+  exact fun hi => h.apply_eq_self_of_ge _ (Nat.le_of_not_lt hi)
 
 theorem FixedGE.splitsAt (h : e.FixedGE n) : e.SplitsAt n := by
   rw [fixedGE_iff_apply_eq_self_of_ge] at h
@@ -248,24 +368,38 @@ theorem FixedGE.eq_one_of_fixedLT (he₁ : e.FixedLT n) (he₂ : e.FixedGE n) : 
 theorem fixedGE_fixedLT_iff_eq_one : e.FixedLT n ∧ e.FixedGE n ↔ e = 1 :=
   ⟨fun h => eq_one_of_fixedLT_of_fixedGE h.1 h.2, fun h => h ▸ ⟨fixedLT_one, fixedGE_one⟩⟩
 
-theorem commute_fixedGE_fixedLT (he : e.FixedGE n) (hf : f.FixedLT n) : Commute e f := by
-  simp_rw [commute_iff_eq, Equiv.ext_iff, mul_apply]
-  intro i
+theorem FixedGE.mul_fixedLT_apply (he : e.FixedGE n) (hf : f.FixedLT n) :
+    (e * f) i = if i < n then e i else f i := by
   rcases Nat.lt_or_ge i n with hi | hi
-  · simp_rw [hf.apply_eq_self_of_lt i hi,
-      hf.apply_eq_self_of_lt (e i) (he.splitsAt.apply_lt_of_lt _ hi)]
-  · simp_rw [he.apply_eq_self_of_ge i hi,
-      he.apply_eq_self_of_ge (f i) (hf.splitsAt.apply_ge_of_ge _ hi)]
+  · rw [if_pos hi]
+    exact congrArg e (hf.apply_eq_self_of_lt _ hi)
+  · rw [if_neg hi.not_gt]
+    exact he.apply_eq_self_of_ge _ (hf.splitsAt.apply_ge_of_ge _ hi)
 
-theorem FixedGE.commute_fixedLT (he : e.FixedGE n) (hf : f.FixedLT n) : Commute e f :=
-  commute_fixedGE_fixedLT he hf
+theorem FixedGE.fixedLT_mul_apply (he : e.FixedGE n) (hf : f.FixedLT n) :
+    (f * e) i = if i < n then e i else f i := by
+  rcases Nat.lt_or_ge i n with hi | hi
+  · rw [if_pos hi]
+    exact hf.apply_eq_self_of_lt _ (he.splitsAt.apply_lt_of_lt _ hi)
+  · rw [if_neg hi.not_gt]
+    exact congrArg f (he.apply_eq_self_of_ge _ hi)
+
+theorem FixedLT.fixedGE_mul_apply (he : e.FixedGE n) (hf : f.FixedLT n) :
+    (e * f) i = if i < n then e i else f i := he.mul_fixedLT_apply hf
+
+theorem FixedLT.mul_fixedGE_apply (he : e.FixedGE n) (hf : f.FixedLT n) :
+    (f * e) i = if i < n then e i else f i := he.fixedLT_mul_apply hf
+
+theorem FixedGE.commute_fixedLT (he : e.FixedGE n) (hf : f.FixedLT n) : Commute e f := by
+  simp_rw [commute_iff_eq, Equiv.ext_iff, he.mul_fixedLT_apply hf,
+    he.fixedLT_mul_apply hf, implies_true]
 
 theorem FixedLT.commute_fixedGE (he : e.FixedGE n) (hf : f.FixedLT n) : Commute e f :=
-  commute_fixedGE_fixedLT he hf
+  he.commute_fixedLT hf
 
 theorem FixedGE.mul_mul_mul_comm (he : e.FixedGE n) (hf : f.FixedLT n) :
     (e' * e) * (f * f') = (e' * f) * (e * f') :=
-  Commute.mul_mul_mul_comm (commute_fixedGE_fixedLT he hf) _ _
+  Commute.mul_mul_mul_comm (he.commute_fixedLT hf) _ _
 
 theorem FixedLT.mul_mul_mul_comm (he : e.FixedGE n) (hf : f.FixedLT n) :
     (e' * e) * (f * f') = (e' * f) * (e * f') := he.mul_mul_mul_comm hf
@@ -285,14 +419,118 @@ theorem FixedGE.conj_fixedGE_of_splitsAt (he : e.FixedGE n) (hf : f.SplitsAt n) 
 theorem SplitsAt.conj_fixedGE_of_fixedGE (he : e.FixedGE n) (hf : f.SplitsAt n) :
     (f * e * f⁻¹).FixedGE n := he.conj_fixedGE_of_splitsAt hf
 
+@[simp] theorem fixedGE_piecewise_one {he : e.SplitsAt n} :
+    (he.piecewise splitsAt_one).FixedGE n :=
+  fixedGE_of_apply_eq_self_of_ge piecewise_apply_of_ge
+
+@[simp] theorem FixedGE.piecewise_one (h : e.FixedGE n) :
+    h.splitsAt.piecewise splitsAt_one = e := Equiv.ext <| fun _ => by
+  rw [piecewise_apply, one_apply, h.apply]
+  split_ifs <;> rfl
+
+@[simp] theorem FixedGE.one_piecewise (h : e.FixedGE n) :
+    splitsAt_one.piecewise h.splitsAt = 1 := Equiv.ext <| fun _ => by
+  rw [piecewise_apply, one_apply, h.apply]
+  split_ifs <;> rfl
+
+theorem piecewise_fixedGE_fixedLT (e : Perm ℕ) (f : Perm ℕ) (he : e.FixedGE n) (hf : f.FixedLT n) :
+    he.splitsAt.piecewise hf.splitsAt = e * f := Equiv.ext <| fun i => by
+  rw [piecewise_apply, mul_apply, he.apply (i := f i)]
+  simp_rw [hf.splitsAt.apply_lt_iff_lt]
+  exact ite_congr rfl (fun hi => congrArg _ (hf.apply_eq_self_of_lt _ hi).symm) (fun _ => rfl)
+
 end FixedGE
 
-@[simps!]
+theorem SplitsAt.exists_fixedGE_fixed_LT_piecewise_eq {g : Perm ℕ} (hg : g.SplitsAt n) :
+    ∃ (e : Perm ℕ) (f : Perm ℕ) (he : e.FixedGE n) (hf : f.FixedLT n),
+    he.splitsAt.piecewise hf.splitsAt = g :=
+  ⟨hg.piecewise splitsAt_one, splitsAt_one.piecewise hg,
+    fixedGE_piecewise_one, fixedLT_one_piecewise, piecewise_piecewise_piecewise_self⟩
+
+theorem SplitsAt.exists_fixedGE_fixed_LT_mul_eq {g : Perm ℕ} (hg : g.SplitsAt n) :
+    ∃ e f, e.FixedGE n ∧ f.FixedLT n ∧ e * f = g :=
+  ⟨hg.piecewise splitsAt_one, splitsAt_one.piecewise hg,
+    fixedGE_piecewise_one, fixedLT_one_piecewise, by
+      simp_rw [piecewise_mul_piecewise, mul_one, one_mul, piecewise_self]⟩
+
+theorem splitsAt_iff_exists_fixedGE_fixed_LT_mul_eq {g : Perm ℕ} :
+    g.SplitsAt n ↔ ∃ e f, e.FixedGE n ∧ f.FixedLT n ∧ e * f = g  :=
+  ⟨fun he => he.exists_fixedGE_fixed_LT_mul_eq,
+    fun ⟨_, _, he, hf, h_eq⟩ => h_eq ▸ he.splitsAt_mul_of_fixedLT hf⟩
+
+def equivProdFixedSplitsAt (n : ℕ) : {e : Perm ℕ // e.SplitsAt n} ≃
+    {e : Perm ℕ // e.FixedGE n} × {e : Perm ℕ // e.FixedLT n} where
+  toFun e := ⟨⟨e.2.piecewise splitsAt_one, fixedGE_piecewise_one⟩,
+    ⟨splitsAt_one.piecewise e.2, fixedLT_one_piecewise⟩⟩
+  invFun := fun ⟨e, f⟩ => ⟨e.prop.splitsAt.piecewise f.prop.splitsAt,
+    splitsAt_piecewise _ _⟩
+  left_inv e := by simp_rw [piecewise_piecewise_piecewise_self]
+  right_inv := fun ⟨e, f⟩ => by
+    simp only [piecewise_piecewise_left, piecewise_piecewise_right,
+      e.2, f.prop, FixedGE.piecewise_one, FixedLT.one_piecewise]
+
+@[simps]
+def natPerm (e : Perm (Fin n)) : Perm ℕ where
+  toFun i := if hi : i < n then e ⟨i, hi⟩ else i
+  invFun i := if hi : i < n then e⁻¹ ⟨i, hi⟩ else i
+  left_inv i := by by_cases hi : i < n <;> simp [hi]
+  right_inv i := by by_cases hi : i < n <;> simp [hi]
+
+@[simps]
 def finPerm (e : Perm ℕ) (he : e.SplitsAt n) : Perm (Fin n) where
   toFun := fun ⟨i, hi⟩ => ⟨e i, he.apply_lt_of_lt i hi⟩
   invFun := fun ⟨i, hi⟩ => ⟨e⁻¹ i, he.inv.apply_lt_of_lt i hi⟩
   left_inv := fun ⟨i, _⟩ => Fin.ext <| e.symm_apply_apply i
   right_inv := fun ⟨i, _⟩ => Fin.ext <| e.apply_symm_apply i
+
+@[simps]
+def equivFixedGE (n : ℕ) : {e : Perm ℕ // e.FixedGE n} ≃ Perm (Fin n) where
+  toFun e := finPerm e.1 e.2.splitsAt
+  invFun e := ⟨e.natPerm, fixedGE_of_apply_eq_self_of_ge
+    fun _ hi => dif_neg (Nat.not_lt_of_ge hi)⟩
+  left_inv e := Subtype.ext <| Equiv.ext fun i => by
+    simp_rw [natPerm_apply, finPerm_apply_val, dite_eq_ite, ite_eq_left_iff, not_lt]
+    exact fun hi => (e.2.apply_eq_self_of_ge _ hi).symm
+  right_inv e := Equiv.ext fun i => Fin.ext <| by
+    simp_rw [finPerm_apply_val, natPerm_apply, dif_pos i.is_lt]
+
+@[simps]
+def upperPerm (e : Perm ℕ) (h : e.SplitsAt n) : Perm ℕ where
+  toFun i := e (i + n) - n
+  invFun i := e⁻¹ (i + n) - n
+  left_inv i := by
+    have h := (h.apply_ge_iff_ge (i + n)).mpr (Nat.le_add_left _ _)
+    rcases Nat.exists_eq_add_of_le' h with ⟨k, hk⟩
+    simp_rw [hk, Nat.add_sub_cancel, ← hk, inv_apply_self, Nat.add_sub_cancel]
+  right_inv i := by
+    rw [← inv_splitsAt] at h
+    have h := (h.apply_ge_iff_ge (i + n)).mpr (Nat.le_add_left _ _)
+    rcases Nat.exists_eq_add_of_le' h with ⟨k, hk⟩
+    simp_rw [hk, Nat.add_sub_cancel, ← hk, apply_inv_self, Nat.add_sub_cancel]
+
+@[simps]
+def permShift (e : Perm ℕ) (n : ℕ) : Perm ℕ where
+  toFun i := if i < n then i else e (i - n) + n
+  invFun i := if i < n then i else e⁻¹ (i - n) + n
+  left_inv i := by by_cases hi : i < n <;> simp [hi, Nat.ge_of_not_lt]
+  right_inv i := by by_cases hi : i < n <;> simp [hi, Nat.ge_of_not_lt]
+
+@[simps]
+def equivFixedLT (n : ℕ) : {e : Perm ℕ // e.FixedLT n} ≃ Perm ℕ where
+  toFun e := upperPerm e.1 e.2.splitsAt
+  invFun e := ⟨e.permShift n, fixedLT_of_apply_eq_self_of_lt
+    fun _ hi => dif_pos hi⟩
+  left_inv e := Subtype.ext <| Equiv.ext fun i => by
+    rw [permShift_apply, upperPerm_apply, e.2.apply (i := i)]
+    refine ite_congr rfl (fun _ => rfl) (fun hi => ?_)
+    rw [Nat.sub_add_cancel (Nat.ge_of_not_lt hi),
+      Nat.sub_add_cancel (e.2.splitsAt.apply_ge_of_ge _ (Nat.ge_of_not_lt hi))]
+  right_inv e := Equiv.ext fun i => by
+    simp_rw [upperPerm_apply, permShift_apply, Nat.add_sub_cancel, Nat.add_lt_iff_lt_sub_right,
+      Nat.sub_self, Nat.not_lt_zero, if_false, Nat.add_sub_cancel]
+
+/-
+
 
 section PermBelow
 
@@ -311,19 +549,7 @@ theorem SplitsAt.finPerm_inv (he : e⁻¹.SplitsAt n) :
 
 end PermBelow
 
-@[simps!]
-def upperPerm (e : Perm ℕ) (h : e.SplitsAt n) : Perm ℕ where
-  toFun i := e (i + n) - n
-  invFun i := e⁻¹ (i + n) - n
-  left_inv i := by
-    have h := (h.apply_ge_iff_ge (i + n)).mpr (Nat.le_add_left _ _)
-    rcases Nat.exists_eq_add_of_le' h with ⟨k, hk⟩
-    simp_rw [hk, Nat.add_sub_cancel, ← hk, inv_apply_self, Nat.add_sub_cancel]
-  right_inv i := by
-    rw [← inv_splitsAt] at h
-    have h := (h.apply_ge_iff_ge (i + n)).mpr (Nat.le_add_left _ _)
-    rcases Nat.exists_eq_add_of_le' h with ⟨k, hk⟩
-    simp_rw [hk, Nat.add_sub_cancel, ← hk, apply_inv_self, Nat.add_sub_cancel]
+
 
 section PermAbove
 
@@ -375,7 +601,7 @@ theorem natPerm_inv : e⁻¹.natPerm = e.natPerm⁻¹ := rfl
 
 @[simp] theorem natPerm_mul : (e * f).natPerm = e.natPerm * f.natPerm := Equiv.ext <| fun i => by
   rcases Nat.lt_or_ge i n with hi | hi <;>
-  simp  [hi, natPerm_apply_of_lt, mul_apply, natPerm_apply_fin]
+  simp  [hi, natPerm_apply_of_lt, mul_apply]
 
 theorem fixedGE_natPerm : e.natPerm.FixedGE n :=
   fixedGE_of_apply_eq_self_of_ge natPerm_apply_of_ge
@@ -542,52 +768,52 @@ variable {e f : Perm ℕ} {he : e.SplitsAt n} {hf : f.SplitsAt n}
 
 namespace SplitsAt
 
-@[simp] theorem natPerm_finPerm : (e.finPerm he).natPerm i = e.permBelow he i := rfl
+@[simp] theorem natPerm_finPerm : (e.finPerm he).natPerm i = he.permBelow i := rfl
 
-theorem permBelow_apply : e.permBelow he i = if i < n then e i else i := rfl
+theorem permBelow_apply : he.permBelow i = if i < n then e i else i := rfl
 
-@[simp] theorem permBelow_apply_of_lt : ∀ i, i < n → e.permBelow he i = e i :=
+@[simp] theorem permBelow_apply_of_lt : ∀ i, i < n → he.permBelow i = e i :=
   natPerm_apply_of_lt
 
-@[simp] theorem permBelow_apply_of_ge : ∀ i, n ≤ i → e.permBelow he i = i :=
+@[simp] theorem permBelow_apply_of_ge : ∀ i, n ≤ i → he.permBelow i = i :=
   natPerm_apply_of_ge
 
-theorem permBelow_apply_fin {i : Fin n} : e.permBelow he i = e i := natPerm_apply_fin
+theorem permBelow_apply_fin {i : Fin n} : he.permBelow i = e i := natPerm_apply_fin
 
-theorem permBelow_apply_add : e.permBelow he (i + n) = i + n := natPerm_apply_add
+theorem permBelow_apply_add : he.permBelow (i + n) = i + n := natPerm_apply_add
 
-theorem permBelow_one : permBelow (n := n) 1 one_splitsAt = 1 := natPerm_one
+theorem permBelow_one : permBelow (n := n) 1 splitsAt_one = 1 := natPerm_one
 
-@[simp] theorem inv_permBelow : (e.permBelow he)⁻¹ = e⁻¹.permBelow he.inv := inv_natPerm
+@[simp] theorem inv_permBelow : (he.permBelow)⁻¹ = e⁻¹.permBelow he.inv := inv_natPerm
 
-theorem permBelow_inv (he : e⁻¹.SplitsAt n) : e⁻¹.permBelow he = (e.permBelow he.inv)⁻¹ := rfl
+theorem permBelow_inv (he : e⁻¹.SplitsAt n) : e⁻¹.permBelow he = (he.permBelow.inv)⁻¹ := rfl
 
 @[simp] theorem permBelow_mul (he : e.SplitsAt n) (hf : f.SplitsAt n) :
-    (e * f).permBelow (he.mul hf) = e.permBelow he * f.permBelow hf := by
+    (e * f).permBelow (he.mul hf) = he.permBelow * f.permBelow hf := by
   unfold permBelow
   simp only [he, hf, finPerm_mul, natPerm_mul]
 
-@[simp] theorem fixedGE_permBelow : (e.permBelow he).FixedGE n := fixedGE_natPerm
+@[simp] theorem fixedGE_permBelow : (he.permBelow).FixedGE n := fixedGE_natPerm
 
-@[simp] theorem splitsAt_permBelow : (e.permBelow he).SplitsAt n := fixedGE_natPerm.splitsAt
+@[simp] theorem splitsAt_permBelow : (he.permBelow).SplitsAt n := fixedGE_natPerm.splitsAt
 
-@[simp] theorem finPerm_permBelow : (e.permBelow he).finPerm he.splitsAt_permBelow = e.finPerm he :=
+@[simp] theorem finPerm_permBelow : (he.permBelow).finPerm he.splitsAt_permBelow = e.finPerm he :=
   finPerm_natPerm
 
-@[simp] theorem upperPerm_permBelow : (e.permBelow he).upperPerm he.splitsAt_permBelow = 1 :=
+@[simp] theorem upperPerm_permBelow : (he.permBelow).upperPerm he.splitsAt_permBelow = 1 :=
   upperPerm_natPerm
 
 end SplitsAt
 
-@[simp] theorem FixedGE.permBelow (he : e.FixedGE n) : e.permBelow he.splitsAt = e :=
+@[simp] theorem FixedGE.permBelow (he : e.FixedGE n) : he.permBelow.splitsAt = e :=
     Equiv.ext <| fun i => by
   rcases Nat.lt_or_ge i n with hi | hi <;> simp [hi, he.apply_eq_self_of_ge]
 
 @[simp] theorem SplitsAt.permBelow_permBelow (he : e.SplitsAt n) :
-    (e.permBelow he).permBelow he.splitsAt_permBelow = e.permBelow he :=
+    (he.permBelow).permBelow he.splitsAt_permBelow = he.permBelow :=
   he.fixedGE_permBelow.permBelow
 
-@[simp] theorem FixedLT.permBelow (he : e.FixedLT n) : e.permBelow he.splitsAt = 1 :=
+@[simp] theorem FixedLT.permBelow (he : e.FixedLT n) : he.permBelow.splitsAt = 1 :=
     Equiv.ext <| fun i => by
   rcases Nat.lt_or_ge i n with hi | hi <;> simp [hi, he.apply_eq_self_of_lt]
 
@@ -631,12 +857,12 @@ theorem permAbove_apply_fin {i : Fin n} : e.permAbove he i = i := permShift_appl
 theorem permAbove_apply_add : e.permAbove he (i + n) = e (i + n) :=
   he.permAbove_apply_of_ge (i + n) (Nat.le_add_left _ _)
 
-theorem permAbove_one : permAbove (n := n) 1 one_splitsAt = 1 := Equiv.ext <| fun _ => by
+theorem permAbove_one : permAbove (n := n) 1 splitsAt_one = 1 := Equiv.ext <| fun _ => by
   simp_rw [permAbove_apply, one_apply, ite_self]
 
 @[simp] theorem inv_permAbove : (e.permAbove he)⁻¹ = e⁻¹.permAbove he.inv := rfl
 
-theorem permAbove_inv (he : e⁻¹.SplitsAt n) : e⁻¹.permBelow he = (e.permBelow he.inv)⁻¹ := rfl
+theorem permAbove_inv (he : e⁻¹.SplitsAt n) : e⁻¹.permBelow he = (he.permBelow.inv)⁻¹ := rfl
 
 @[simp] theorem permAbove_mul (he : e.SplitsAt n) (hf : f.SplitsAt n) :
     (e * f).permAbove (he.mul hf) = e.permAbove he * f.permAbove hf := by
@@ -676,7 +902,7 @@ end SplitsAt
   he.fixedLT_permAbove.permAbove
 
 @[simp] theorem SplitsAt.permAbove_permBelow {he : e.SplitsAt n} :
-    (e.permBelow he).permAbove he.splitsAt_permBelow = 1 :=
+    (he.permBelow).permAbove he.splitsAt_permBelow = 1 :=
   he.fixedGE_permBelow.permAbove
 
 @[simp] theorem SplitsAt.permBelow_permAbove {he : e.SplitsAt n} :
@@ -684,7 +910,7 @@ end SplitsAt
   he.fixedLT_permAbove.permBelow
 
 theorem SplitsAt.permBelow_mul_permAbove {he : e.SplitsAt n} :
-    e.permBelow he * e.permAbove he = e := Equiv.ext <| fun i => by
+    he.permBelow * e.permAbove he = e := Equiv.ext <| fun i => by
   rw [mul_apply]
   rcases Nat.lt_or_ge i n with hi | hi
   · simp only [hi, permBelow_apply_of_lt, permAbove_apply_of_lt]
@@ -694,15 +920,6 @@ theorem SplitsAt.permPieces_finPerm_upperPerm {e : Perm ℕ} {he : e.SplitsAt n}
     (e.finPerm he).permPieces (e.upperPerm he) = e := by
   rw [permPieces_eq_natPerm_mul_permShift]
   exact he.permBelow_mul_permAbove
-
-theorem SplitsAt.exists_fixedGE_fixed_LT_mul_eq (hg : g.SplitsAt n) :
-    ∃ e f, e.FixedGE n ∧ f.FixedLT n ∧ e * f = g :=
-  ⟨g.permBelow hg, g.permAbove hg, fixedGE_permBelow, fixedLT_permAbove, permBelow_mul_permAbove⟩
-
-theorem splitsAt_iff_exists_fixedGE_fixed_LT_mul_eq :
-    g.SplitsAt n ↔ ∃ e f, e.FixedGE n ∧ f.FixedLT n ∧ e * f = g  :=
-  ⟨fun he => he.exists_fixedGE_fixed_LT_mul_eq,
-    fun ⟨_, _, he, hf, h_eq⟩ => h_eq ▸ he.splitsAt_mul_of_fixedLT hf⟩
 
 end PermAbove
 
@@ -743,8 +960,10 @@ theorem card_fixedGE : Nat.card {e : Perm ℕ // e.FixedGE n} = n.factorial :=
   (Nat.card_congr (equivFixedGE n).symm).trans <| by rw [Nat.card_perm, Nat.card_fin]
 
 end
+-/
 
 end Equiv.Perm
+
 
 namespace Subgroup
 
@@ -831,6 +1050,7 @@ theorem fixedLT_zero : fixedLT 0 = ⊤ := by
 theorem splitsAt_zero : splitsAt 0 = ⊤ := by
   rw [←  sup_fixedGE_fixedLT, fixedGE_zero, fixedLT_zero, bot_sup_eq]
 
+/-
 @[simps! apply_coe symm_apply]
 def mulEquivFixedGE (n : ℕ) : Perm (Fin n) ≃* fixedGE n :=
   { equivFixedGE n with map_mul' _ _ := Subtype.ext <| natPerm_mul }
@@ -839,14 +1059,15 @@ def mulEquivFixedGE (n : ℕ) : Perm (Fin n) ≃* fixedGE n :=
 def mulEquivFixedLT (n : ℕ) : Perm ℕ ≃* fixedLT n :=
   { equivFixedLT n with map_mul' _ _ := Subtype.ext <| permShift_mul }
 
-@[simps! apply_coe symm_apply]
-def mulEquivSplitsAt (n : ℕ) : Perm (Fin n) × Perm ℕ ≃* splitsAt n :=
-  { equivSplitsAt n with map_mul' _ _ := Subtype.ext <| permPieces_mul }
+-/
 
-@[simps! apply_coe symm_apply]
-def mulEquivProdFixedSplitsAt (n : ℕ) : fixedGE n × fixedLT n ≃* splitsAt n :=
-  { equivProdFixedSplitsAt n with map_mul' e f :=
-    Subtype.ext <| e.2.2.mul_mul_mul_comm f.1.2  }
+@[simps! apply symm_apply_coe]
+def mulEquivProdFixedSplitsAt (n : ℕ) : splitsAt n ≃* fixedGE n × fixedLT n :=
+  { equivProdFixedSplitsAt n with
+    toFun e := ⟨⟨e.2.piecewise splitsAt_one, _⟩, ⟨splitsAt_one.piecewise e.2, _⟩⟩
+    map_mul' e f := by
+      simp only [Prod.ext_iff, Subtype.ext_iff, coe_mul, Prod.mk_mul_mk,
+        piecewise_mul_piecewise, mul_one, and_self] }
 
 section
 
