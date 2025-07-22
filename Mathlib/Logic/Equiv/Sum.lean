@@ -247,6 +247,26 @@ end
 
 section sumCompl
 
+@[simp]
+theorem _root_.Sum.elim_dite {α β γ} {f : α → γ} {g : β → γ} {c t e} [Decidable c] :
+    Sum.elim f g (dite c t e) = dite c (fun h => (t h).elim f g) (fun h => (e h).elim f g) :=
+  apply_dite (Sum.elim f g) c t e
+
+@[simp]
+theorem _root_.Sum.map_dite {α β γ δ} {f : α → γ} {g : β → δ} {c t e} [Decidable c] :
+    Sum.map f g (dite c t e) = dite c (fun h => (t h).map f g) (fun h => (e h).map f g) :=
+  Sum.elim_dite
+
+@[simp]
+theorem _root_.Sum.elim_comp_elim {α β γ δ ε} {f : α → γ ⊕ δ} {g : β → γ ⊕ δ} {p : γ → ε}
+    {q : δ → ε} : Sum.elim p q ∘ Sum.elim f g = Sum.elim (Sum.elim p q ∘ f) (Sum.elim p q ∘ g) :=
+  Sum.comp_elim (Sum.elim p q) f g
+
+@[simp]
+theorem _root_.Sum.elim_elim {α β γ δ ε} {f : α → γ ⊕ δ} {g : β → γ ⊕ δ} {p : γ → ε} {q : δ → ε}
+    {x} : Sum.elim p q (Sum.elim f g x) = Sum.elim (Sum.elim p q ∘ f) (Sum.elim p q ∘ g) x := by
+  cases x <;> simp
+
 /-- For any predicate `p` on `α`,
 the sum of the two subtypes `{a // p a}` and its complement `{a // ¬ p a}`
 is naturally equivalent to `α`.
@@ -257,13 +277,8 @@ def sumCompl {α : Type*} (p : α → Prop) [DecidablePred p] :
     { a // p a } ⊕ { a // ¬p a } ≃ α where
   toFun := Sum.elim Subtype.val Subtype.val
   invFun a := if h : p a then Sum.inl ⟨a, h⟩ else Sum.inr ⟨a, h⟩
-  left_inv := by
-    rintro (⟨x, hx⟩ | ⟨x, hx⟩) <;> dsimp
-    · rw [dif_pos]
-    · rw [dif_neg]
-  right_inv a := by
-    dsimp
-    split_ifs <;> rfl
+  left_inv a := by rcases a with (a | a) <;> simp <;> exact a.prop
+  right_inv _ := by simp
 
 @[simp]
 theorem sumCompl_apply_inl {α} (p : α → Prop) [DecidablePred p] (x : { a // p a }) :
@@ -275,6 +290,10 @@ theorem sumCompl_apply_inr {α} (p : α → Prop) [DecidablePred p] (x : { a // 
     sumCompl p (Sum.inr x) = x :=
   rfl
 
+theorem sumCompl_apply_map {α β γ} (p : α → Prop) [DecidablePred p] {f : β → { a // p a }}
+    {g : γ → { a // ¬ p a }} {x : β ⊕ γ} : sumCompl p (Sum.map f g x) =
+    Sum.elim ((f ·) : β → α) ((g ·) : γ → α) x := Sum.elim_map
+
 @[simp]
 theorem sumCompl_apply_symm_of_pos {α} (p : α → Prop) [DecidablePred p] (a : α) (h : p a) :
     (sumCompl p).symm a = Sum.inl ⟨a, h⟩ :=
@@ -284,6 +303,21 @@ theorem sumCompl_apply_symm_of_pos {α} (p : α → Prop) [DecidablePred p] (a :
 theorem sumCompl_apply_symm_of_neg {α} (p : α → Prop) [DecidablePred p] (a : α) (h : ¬p a) :
     (sumCompl p).symm a = Sum.inr ⟨a, h⟩ :=
   dif_neg h
+
+@[simp]
+theorem sumCompl_apply_symm_subtype {α} (p : α → Prop) [DecidablePred p]
+    (a : Subtype p) : (sumCompl p).symm a = Sum.inl a :=
+  sumCompl_apply_symm_of_pos p a.val a.prop
+
+@[simp]
+theorem sumCompl_apply_symm_of_subtype_compl {α} (p : α → Prop) [DecidablePred p]
+    (a : Subtype (¬ p ·)) : (sumCompl p).symm a = Sum.inr a :=
+  sumCompl_apply_symm_of_neg p a.val a.prop
+
+theorem elim_apply_sumCompl {α β} (p : α → Prop) [DecidablePred p] (a : α)
+    {f : { a // p a } → β} {g : { a // ¬p a } → β} :
+    Sum.elim f g ((sumCompl p).symm a) = if h : p a then f ⟨a, h⟩ else g ⟨a, h⟩ :=
+  apply_dite _ _ _ _
 
 end sumCompl
 

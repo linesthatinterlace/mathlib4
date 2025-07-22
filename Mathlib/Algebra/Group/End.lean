@@ -270,8 +270,8 @@ theorem sigmaCongrRightHom_injective {α : Type*} {β : α → Type*} :
 def subtypeCongrHom (p : α → Prop) [DecidablePred p] :
     Perm { a // p a } × Perm { a // ¬p a } →* Perm α where
   toFun pair := Perm.subtypeCongr pair.fst pair.snd
-  map_one' := Perm.subtypeCongr.refl
-  map_mul' _ _ := (Perm.subtypeCongr.trans _ _ _ _).symm
+  map_one' := Perm.subtypeCongr_refl
+  map_mul' _ _ := (Perm.subtypeCongr_trans _ _ _ _).symm
 
 theorem subtypeCongrHom_injective (p : α → Prop) [DecidablePred p] :
     Function.Injective (subtypeCongrHom p) := by
@@ -334,19 +334,6 @@ end ExtendDomain
 section Subtype
 
 variable {p : α → Prop} {f : Perm α}
-
-/-- If the permutation `f` fixes the subtype `{x // p x}`, then this returns the permutation
-  on `{x // p x}` induced by `f`. -/
-def subtypePerm (f : Perm α) (h : ∀ x, p (f x) ↔ p x) : Perm { x // p x } where
-  toFun := fun x => ⟨f x, (h _).2 x.2⟩
-  invFun := fun x => ⟨f⁻¹ x, (h (f⁻¹ x)).1 <| by simpa using x.2⟩
-  left_inv _ := by simp only [Perm.inv_apply_self, Subtype.coe_eta]
-  right_inv _ := by simp only [Perm.apply_inv_self, Subtype.coe_eta]
-
-@[simp]
-theorem subtypePerm_apply (f : Perm α) (h : ∀ x, p (f x) ↔ p x) (x : { x // p x }) :
-    subtypePerm f h x = ⟨f x, (h _).2 x.2⟩ :=
-  rfl
 
 @[simp]
 theorem subtypePerm_one (p : α → Prop) (h := fun _ => Iff.rfl) : @subtypePerm α p 1 h = 1 :=

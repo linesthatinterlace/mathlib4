@@ -355,6 +355,13 @@ def equivCongr {δ : Sort*} (ab : α ≃ β) (cd : γ ≃ δ) : (α ≃ γ) ≃ 
 @[simp] theorem equivCongr_refl_right {α β} (ab e : α ≃ β) :
     ab.equivCongr (Equiv.refl β) e = ab.symm.trans e := rfl
 
+@[simp] theorem equivCongr_apply_symm {δ} (ab : α ≃ β) (cd : γ ≃ δ) (e : α ≃ γ) :
+    (ab.equivCongr cd e).symm = (cd.equivCongr ab e.symm) := rfl
+
+@[simp] theorem equivCongr_apply_trans {δ ε ζ η} (ab : α ≃ β) (de : δ ≃ ε) (ef : ζ ≃ η)
+    (e : α ≃ δ) (f : δ ≃ ζ) : (ab.equivCongr de e).trans (de.equivCongr ef f) =
+    ab.equivCongr ef (e.trans f) := Equiv.ext fun _ => (congrArg (ef ∘ f)) <| (symm_apply_apply _ _)
+
 @[simp] theorem equivCongr_apply_apply {δ} (ab : α ≃ β) (cd : γ ≃ δ) (e : α ≃ γ) (x) :
     ab.equivCongr cd e x = cd (e (ab.symm x)) := rfl
 

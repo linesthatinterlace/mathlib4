@@ -46,64 +46,109 @@ section subtypeCongr
 
 /-- Combines an `Equiv` between two subtypes with an `Equiv` between their complements to form a
   permutation. -/
-def subtypeCongr {α} {p q : α → Prop} [DecidablePred p] [DecidablePred q]
-    (e : { x // p x } ≃ { x // q x }) (f : { x // ¬p x } ≃ { x // ¬q x }) : Perm α :=
-  (sumCompl p).symm.trans ((sumCongr e f).trans (sumCompl q))
+
+def subtypeCongr {α β} {p : α → Prop} {q : β → Prop} [DecidablePred p] [DecidablePred q]
+    (e : { x // p x } ≃ { x // q x }) (f : { x // ¬p x } ≃ { x // ¬q x }) : α ≃ β :=
+  (sumCompl p).equivCongr (sumCompl q) (sumCongr e f)
+
+variable {α β γ : Type*} {p : α → Prop} {q : β → Prop} {r : γ → Prop}
+    [DecidablePred p] [DecidablePred q] [DecidablePred r]
+variable (e : { x // p x } ≃ { x // q x }) (f : { x // ¬p x } ≃ { x // ¬q x })
+  (e' : { x // q x } ≃ { x // r x }) (f' : { x // ¬q x } ≃ { x // ¬r x })
+
+theorem subtypeCongr_apply (a : α) : e.subtypeCongr f a =
+    if h : p a then (e ⟨a, h⟩ : β) else f ⟨a, h⟩ := by
+  unfold subtypeCongr; simp [sumCompl_apply_map, elim_apply_sumCompl]
+
+@[simp]
+theorem subtypeCongr_apply_of_pos {a : α} (h : p a) : e.subtypeCongr f a = e ⟨a, h⟩ := by
+  unfold subtypeCongr; simp [h]
+
+@[simp]
+theorem subtypeCongr_apply_subtype (a : { a // p a }) : e.subtypeCongr f a = e a := by
+  unfold subtypeCongr; simp
+
+@[simp]
+theorem subtypeCongr_apply_of_neg {a : α} (h : ¬ p a) : e.subtypeCongr f a = f ⟨a, h⟩ := by
+  unfold subtypeCongr; simp [h]
+
+@[simp]
+theorem subtypeCongr_apply_subtype_compl (a : { a // ¬p a }) : e.subtypeCongr f a = f a := by
+  unfold subtypeCongr; simp
+
+@[simp]
+theorem subtypeCongr_refl :
+    subtypeCongr (Equiv.refl { a // p a }) (Equiv.refl { a // ¬p a }) = Equiv.refl α := by
+  ext x
+  by_cases h : p x <;> simp [h]
+
+@[simp]
+theorem subtypeCongr_symm : (e.subtypeCongr f).symm = subtypeCongr e.symm f.symm := by
+  unfold subtypeCongr; simp
+
+@[simp]
+theorem subtypeCongr_trans :
+    (e.subtypeCongr f).trans (e'.subtypeCongr f')
+    = (e.trans e').subtypeCongr (f.trans f') := by
+  unfold subtypeCongr; simp
+
+theorem prop_subtypeCongr_iff : ∀ a, p a ↔ q (e.subtypeCongr f a) := fun _ => by
+  simp_rw [subtypeCongr_apply, apply_dite q, Subtype.prop, Subtype.complProp, dite_eq_ite,
+    ite_prop_iff_or, and_true, and_false, or_false]
+
+namespace Perm
 
 variable {ε : Type*} {p : ε → Prop} [DecidablePred p]
 variable (ep ep' : Perm { a // p a }) (en en' : Perm { a // ¬p a })
 
 /-- Combining permutations on `ε` that permute only inside or outside the subtype
 split induced by `p : ε → Prop` constructs a permutation on `ε`. -/
-def Perm.subtypeCongr : Equiv.Perm ε :=
-  permCongr (sumCompl p) (sumCongr ep en)
+abbrev subtypeCongr : Equiv.Perm ε := Equiv.subtypeCongr ep en
 
-theorem Perm.subtypeCongr.apply (a : ε) : ep.subtypeCongr en a =
-    if h : p a then (ep ⟨a, h⟩ : ε) else en ⟨a, h⟩ := by
-  by_cases h : p a <;> simp [Perm.subtypeCongr, h]
+@[deprecated subtypeCongr_apply (since := "2025-07-22")]
+theorem subtypeCongr.apply (a : ε) : ep.subtypeCongr en a =
+    if h : p a then (ep ⟨a, h⟩ : ε) else en ⟨a, h⟩ := ep.subtypeCongr_apply en a
 
-@[simp]
-theorem Perm.subtypeCongr.left_apply {a : ε} (h : p a) : ep.subtypeCongr en a = ep ⟨a, h⟩ := by
-  simp [Perm.subtypeCongr.apply, h]
+@[deprecated subtypeCongr_apply_of_pos (since := "2025-07-22")]
+theorem subtypeCongr.left_apply {a : ε} (h : p a) : ep.subtypeCongr en a = ep ⟨a, h⟩ :=
+  ep.subtypeCongr_apply_of_pos en h
 
-@[simp]
-theorem Perm.subtypeCongr.left_apply_subtype (a : { a // p a }) : ep.subtypeCongr en a = ep a :=
-    Perm.subtypeCongr.left_apply ep en a.property
+@[deprecated subtypeCongr_apply_subtype (since := "2025-07-22")]
+theorem subtypeCongr.left_apply_subtype (a : { a // p a }) : ep.subtypeCongr en a = ep a :=
+    subtypeCongr_apply_subtype ep en a
 
-@[simp]
-theorem Perm.subtypeCongr.right_apply {a : ε} (h : ¬p a) : ep.subtypeCongr en a = en ⟨a, h⟩ := by
-  simp [Perm.subtypeCongr.apply, h]
+@[deprecated subtypeCongr_apply_of_neg (since := "2025-07-22")]
+theorem subtypeCongr.right_apply {a : ε} (h : ¬p a) : ep.subtypeCongr en a = en ⟨a, h⟩ :=
+  ep.subtypeCongr_apply_of_neg en h
 
-@[simp]
-theorem Perm.subtypeCongr.right_apply_subtype (a : { a // ¬p a }) : ep.subtypeCongr en a = en a :=
-  Perm.subtypeCongr.right_apply ep en a.property
+@[deprecated subtypeCongr_apply_subtype_compl (since := "2025-07-22")]
+theorem subtypeCongr.right_apply_subtype (a : { a // ¬p a }) : ep.subtypeCongr en a = en a :=
+  subtypeCongr_apply_subtype_compl ep en a
 
-@[simp]
-theorem Perm.subtypeCongr.refl :
-    Perm.subtypeCongr (Equiv.refl { a // p a }) (Equiv.refl { a // ¬p a }) = Equiv.refl ε := by
-  ext x
-  by_cases h : p x <;> simp [h]
+theorem subtypeCongr_refl :
+    subtypeCongr (Equiv.refl { a // p a }) (Equiv.refl { a // ¬p a }) = Equiv.refl ε :=
+  Equiv.subtypeCongr_refl
 
-@[simp]
-theorem Perm.subtypeCongr.symm : (ep.subtypeCongr en).symm = Perm.subtypeCongr ep.symm en.symm := by
-  ext x
-  by_cases h : p x
-  · have : p (ep.symm ⟨x, h⟩) := Subtype.property _
-    simp [h, symm_apply_eq, this]
-  · have : ¬p (en.symm ⟨x, h⟩) := Subtype.property (en.symm _)
-    simp [h, symm_apply_eq, this]
+@[deprecated subtypeCongr_refl (since := "2025-07-22")]
+alias subtypeCongr.refl := subtypeCongr_refl
 
-@[simp]
-theorem Perm.subtypeCongr.trans :
+theorem subtypeCongr_symm : (ep.subtypeCongr en).symm = subtypeCongr ep.symm en.symm :=
+  Equiv.subtypeCongr_symm _ _
+
+@[deprecated subtypeCongr_symm (since := "2025-07-22")]
+alias subtypeCongr.symm := subtypeCongr_symm
+
+theorem subtypeCongr_trans :
     (ep.subtypeCongr en).trans (ep'.subtypeCongr en')
-    = Perm.subtypeCongr (ep.trans ep') (en.trans en') := by
-  ext x
-  by_cases h : p x
-  · have : p (ep ⟨x, h⟩) := Subtype.property _
-    simp [h, this]
-  · have : ¬p (en ⟨x, h⟩) := Subtype.property (en _)
-    simp [h, this]
+    = subtypeCongr (ep.trans ep') (en.trans en') := Equiv.subtypeCongr_trans _ _ _ _
 
+@[deprecated subtypeCongr_trans (since := "2025-07-22")]
+alias subtypeCongr.trans := subtypeCongr_trans
+
+theorem prop_subtypeCongr_iff : ∀ a, p (ep.subtypeCongr en a) ↔ p a := fun _ =>
+  (Equiv.prop_subtypeCongr_iff _ _ _).symm
+
+end Perm
 end subtypeCongr
 
 section subtypePreimage
@@ -256,7 +301,7 @@ theorem isEmpty_congr (e : α ≃ β) : IsEmpty α ↔ IsEmpty β :=
 protected theorem isEmpty (e : α ≃ β) [IsEmpty β] : IsEmpty α :=
   e.isEmpty_congr.mpr ‹_›
 
-section
+section SubtypeEquiv
 
 open Subtype
 
@@ -320,6 +365,71 @@ def subtypeEquivOfSubtype' {p : α → Prop} (e : α ≃ β) :
 /-- If two predicates are equal, then the corresponding subtypes are equivalent. -/
 def subtypeEquivProp {p q : α → Prop} (h : p = q) : Subtype p ≃ Subtype q :=
   subtypeEquiv (Equiv.refl α) fun _ => h ▸ Iff.rfl
+
+abbrev subtypeComplEquiv {p : α → Prop} {q : β → Prop} (e : α ≃ β) (h : ∀ a, p a ↔ q (e a)) :
+    { a : α // ¬ p a } ≃ { b : β // ¬ q b} := e.subtypeEquiv (fun _ => (h _).not)
+
+@[simps! apply symm_apply_coe]
+def subtypeEquivEquiv {α β : Type*} (p : α → Prop) (q : β → Prop)
+    [DecidablePred p] [DecidablePred q] : {e : α ≃ β // ∀ a, p a ↔ q (e a)} ≃
+    (({ a : α // p a } ≃ { b : β // q b }) ×
+    ({ a : α // ¬ p a } ≃ { b : β // ¬ q b})) where
+  toFun := fun e => (subtypeEquiv e.1 e.2, subtypeComplEquiv e.1 e.2)
+  invFun := fun ef => ⟨ef.1.subtypeCongr ef.2, ef.1.prop_subtypeCongr_iff ef.2⟩
+  left_inv _ := Subtype.ext <| Equiv.ext fun _ => by simp [subtypeCongr_apply]
+  right_inv _ := by
+    refine Prod.ext (Equiv.ext fun _ => Subtype.ext <| ?_)
+      (Equiv.ext fun _ => Subtype.ext <| ?_) <;> simp
+
+end SubtypeEquiv
+
+section SubtypePerm
+
+open Subtype
+
+variable {p : α → Prop}
+
+/-- If the permutation `f` fixes the subtype `{x // p x}`, then this returns the permutation
+  on `{x // p x}` induced by `f`. -/
+abbrev subtypePerm (f : Perm α) (h : ∀ x, p (f x) ↔ p x) : Perm { x // p x } :=
+  f.subtypeEquiv (fun _ => (h _).symm)
+
+@[simp]
+theorem subtypePerm_apply (f : Perm α) (h : ∀ x, p (f x) ↔ p x) (x : { x // p x }) :
+    subtypePerm f h x = ⟨f x, (h _).2 x.2⟩ := rfl
+
+
+lemma coe_subtypePerm_eq_map {X} {p : X → Prop} (e : Perm X)
+    (h : ∀ x, p (e x) ↔ p x) : ⇑(e.subtypePerm h) = Subtype.map e (h · |>.mpr) :=
+  rfl
+
+theorem subtypePerm_refl {p : α → Prop} (h : ∀ a, p (Equiv.refl _ a) ↔ p a := fun _ => Iff.rfl) :
+    (Equiv.refl α).subtypePerm h = Equiv.refl { a : α // p a } := subtypeEquiv_refl
+
+
+theorem subtypePerm_symm {p : α → Prop} (e : Perm α) (h : ∀ a : α, p (e a) ↔ p a) :
+    (e.subtypePerm h).symm = e.symm.subtypePerm
+    (e.forall_congr_right.mp (by grind)) := rfl
+
+theorem subtypePerm_trans {p : α → Prop} (e f : Perm α)
+    (h : ∀ a : α, p (e a) ↔ p a) (h' : ∀ b : α, p (f b) ↔ p b) :
+    (e.subtypePerm h).trans (f.subtypePerm h')
+    = (e.trans f).subtypePerm (fun _ => by simp only [trans_apply, h, h']) := rfl
+
+abbrev subtypeComplPerm {p : α → Prop} (e : Perm α) (h : ∀ a, p (e a) ↔ p a) :
+    Perm { a : α // ¬ p a } := e.subtypePerm (fun _ => (h _).not)
+
+@[simps! apply symm_apply_coe]
+def subtypePermEquiv {α : Type*} (p : α → Prop)
+    [DecidablePred p] : {e : Perm α // ∀ a, p (e a) ↔ p a} ≃
+    (Perm { a : α // p a } × (Perm { a : α // ¬ p a })) :=
+    (subtypeEquivRight (by grind)).trans (subtypeEquivEquiv p p)
+
+end SubtypePerm
+
+section
+
+open Subtype
 
 /-- A subtype of a subtype is equivalent to the subtype of elements satisfying both predicates. This
 version allows the “inner” predicate to depend on `h : p a`. -/

@@ -38,6 +38,9 @@ initialize_simps_projections Subtype (val → coe)
 theorem prop (x : Subtype p) : p x :=
   x.2
 
+theorem complProp (x : Subtype (¬ p ·)) : ¬ p x :=
+  x.prop
+
 /-- An alternative version of `Subtype.forall`. This one is useful if Lean cannot figure out `q`
   when using `Subtype.forall` from right to left. -/
 protected theorem forall' {q : ∀ x, p x → Prop} : (∀ x h, q x h) ↔ ∀ x : { a // p a }, q x x.2 :=
