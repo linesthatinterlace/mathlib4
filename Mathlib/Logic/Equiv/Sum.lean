@@ -249,23 +249,13 @@ section sumCompl
 
 @[simp]
 theorem _root_.Sum.elim_dite {α β γ} {f : α → γ} {g : β → γ} {c t e} [Decidable c] :
-    Sum.elim f g (dite c t e) = dite c (fun h => (t h).elim f g) (fun h => (e h).elim f g) :=
+    Sum.elim f g (dite c t e) = dite c (Sum.elim f g <| t ·) (Sum.elim f g <| e ·) :=
   apply_dite (Sum.elim f g) c t e
 
 @[simp]
 theorem _root_.Sum.map_dite {α β γ δ} {f : α → γ} {g : β → δ} {c t e} [Decidable c] :
-    Sum.map f g (dite c t e) = dite c (fun h => (t h).map f g) (fun h => (e h).map f g) :=
+    Sum.map f g (dite c t e) = dite c (Sum.map f g <| t ·) (Sum.map f g <| e ·) :=
   Sum.elim_dite
-
-@[simp]
-theorem _root_.Sum.elim_comp_elim {α β γ δ ε} {f : α → γ ⊕ δ} {g : β → γ ⊕ δ} {p : γ → ε}
-    {q : δ → ε} : Sum.elim p q ∘ Sum.elim f g = Sum.elim (Sum.elim p q ∘ f) (Sum.elim p q ∘ g) :=
-  Sum.comp_elim (Sum.elim p q) f g
-
-@[simp]
-theorem _root_.Sum.elim_elim {α β γ δ ε} {f : α → γ ⊕ δ} {g : β → γ ⊕ δ} {p : γ → ε} {q : δ → ε}
-    {x} : Sum.elim p q (Sum.elim f g x) = Sum.elim (Sum.elim p q ∘ f) (Sum.elim p q ∘ g) x := by
-  cases x <;> simp
 
 /-- For any predicate `p` on `α`,
 the sum of the two subtypes `{a // p a}` and its complement `{a // ¬ p a}`
