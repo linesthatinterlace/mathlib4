@@ -224,13 +224,6 @@ def sumEquivSigmaBool (α β) : α ⊕ β ≃ Σ b, bif b then β else α :=
     | ⟨true, b⟩ => inr b,
     fun s => by cases s <;> rfl, fun s => by rcases s with ⟨_ | _, _⟩ <;> rfl⟩
 
--- See also `Equiv.sigmaPreimageEquiv`.
-/-- `sigmaFiberEquiv f` for `f : α → β` is the natural equivalence between
-the type of all fibres of `f` and the total space `α`. -/
-@[simps]
-def sigmaFiberEquiv {α β : Type*} (f : α → β) : (Σ y : β, { x // f x = y }) ≃ α :=
-  ⟨fun x => ↑x.2, fun x => ⟨f x, x, rfl⟩, fun ⟨_, _, rfl⟩ => rfl, fun _ => rfl⟩
-
 /-- Inhabited types are equivalent to `Option β` for some `β` by identifying `default` with `none`.
 -/
 def sigmaEquivOptionOfInhabited (α : Type u) [Inhabited α] [DecidableEq α] :

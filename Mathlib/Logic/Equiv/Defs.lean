@@ -372,7 +372,7 @@ def equivCongr {δ : Sort*} (ab : α ≃ β) (cd : γ ≃ δ) : (α ≃ γ) ≃ 
 
 section permCongr
 
-variable {α' β' : Type*} (e : α' ≃ β')
+variable {α' β' : Sort*} (e : α' ≃ β')
 
 /-- If `α` is equivalent to `β`, then `Perm α` is equivalent to `Perm β`. -/
 def permCongr : Perm α' ≃ Perm β' := equivCongr e e
@@ -725,6 +725,13 @@ def pSigmaAssoc {α : Sort*} {β : α → Sort*} (γ : ∀ a : α, β a → Sort
     (Σ' ab : Σ' a : α, β a, γ ab.1 ab.2) ≃ Σ' a : α, Σ' b : β a, γ a b where
   toFun x := ⟨x.1.1, ⟨x.1.2, x.2⟩⟩
   invFun x := ⟨⟨x.1, x.2.1⟩, x.2.2⟩
+
+/-- A sigma of a sigma whose second base does not depend on the first is equivalent
+to a sigma whose base is a product. -/
+@[simps!]
+def sigmaAssocProd {α β : Type*} {γ : α → β → Type*} :
+    (ab : α × β) × γ ab.1 ab.2 ≃ (a : α) × (b : β) × γ a b :=
+  sigmaCongrLeft' (sigmaEquivProd _ _).symm |>.trans <| sigmaAssoc γ
 
 end
 

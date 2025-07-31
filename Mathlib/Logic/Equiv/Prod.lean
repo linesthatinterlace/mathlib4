@@ -186,23 +186,6 @@ theorem sigmaUnique_symm_apply {α} {β : α → Type*} [∀ a, Unique (β a)] (
     (sigmaUnique α β).symm x = ⟨x, default⟩ :=
   rfl
 
-/-- Any `Unique` type is a left identity for type sigma up to equivalence. Compare with `uniqueProd`
-which is non-dependent. -/
-def uniqueSigma {α} (β : α → Type*) [Unique α] : (i:α) × β i ≃ β default :=
-  ⟨fun p ↦ (Unique.eq_default _).rec p.2,
-   fun b ↦ ⟨default, b⟩,
-   fun _ ↦ Sigma.ext (Unique.default_eq _) (eqRec_heq _ _),
-   fun _ ↦ rfl⟩
-
-theorem uniqueSigma_apply {α} {β : α → Type*} [Unique α] (x : (a : α) × β a) :
-    uniqueSigma β x = (Unique.eq_default _).rec x.2 :=
-  rfl
-
-@[simp]
-theorem uniqueSigma_symm_apply {α} {β : α → Type*} [Unique α] (y : β default) :
-    (uniqueSigma β).symm y = ⟨default, y⟩ :=
-  rfl
-
 /-- `Empty` type is a right absorbing element for type product up to an equivalence. -/
 def prodEmpty (α) : α × Empty ≃ Empty :=
   equivEmpty _

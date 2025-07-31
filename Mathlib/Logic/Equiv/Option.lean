@@ -271,12 +271,4 @@ theorem optionEquivSumPUnit_symm_inl {α} (a) : (optionEquivSumPUnit α).symm (S
 theorem optionEquivSumPUnit_symm_inr {α} (a) : (optionEquivSumPUnit α).symm (Sum.inr a) = none :=
   rfl
 
-/-- The set of `x : Option α` such that `isSome x` is equivalent to `α`. -/
-@[simps]
-def optionIsSomeEquiv (α) : { x : Option α // x.isSome } ≃ α where
-  toFun o := Option.get _ o.2
-  invFun x := ⟨some x, rfl⟩
-  left_inv _ := Subtype.eq <| Option.some_get _
-  right_inv _ := Option.get_some _ _
-
 end Equiv

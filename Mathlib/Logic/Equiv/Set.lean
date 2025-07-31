@@ -159,6 +159,11 @@ def setProdEquivSigma {α β : Type*} (s : Set (α × β)) :
 def setCongr {α : Type*} {s t : Set α} (h : s = t) : s ≃ t :=
   subtypeEquivProp h
 
+/-- Transport dependent functions through an equality of sets. -/
+@[simps!] def piCongrSet {α} {W : α → Sort w} {s t : Set α} (h : s = t) :
+    (∀ i : s, W i) ≃ (∀ i : t, W i) := piCongr (setCongr h) (fun _ => Equiv.refl _)
+
+
 -- We could construct this using `Equiv.Set.image e s e.injective`,
 -- but this definition provides an explicit inverse.
 /-- A set is equivalent to its image under an equivalence.
