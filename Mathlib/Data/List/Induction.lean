@@ -156,4 +156,39 @@ abbrev recOnNeNil {motive : (l : List α) → l ≠ [] → Sort*} (l : List α) 
     (cons : ∀ x xs h, motive xs h → motive (x :: xs) (cons_ne_nil x xs)) :
     motive l h := recNeNil singleton cons l h
 
+
+/--
+A recursion principle for lists which separates the singleton case.
+-/
+@[elab_as_elim]
+def twoStepInduction {motive : (l : List α) → Sort*} (nil : motive [])
+    (singleton : ∀ x, motive [x])
+    (cons_cons : ∀ x y xs, motive xs → motive (y :: xs) → motive (x :: y :: xs))
+    (l : List α) : motive l := match l with
+  | [] => nil
+  | [x] => singleton x
+  | _ :: _ :: _ =>
+    cons_cons _ _ _
+    (twoStepInduction nil singleton cons_cons _) (twoStepInduction nil singleton cons_cons _)
+
+@[simp]
+theorem twoStepInduction_nil {motive : (l : List α) → Sort*} (nil : motive [])
+    (singleton : ∀ x, motive [x])
+    (cons_cons : ∀ x y xs, motive xs → motive (y :: xs) → motive (x :: y :: xs)) :
+    twoStepInduction nil singleton cons_cons [] = nil := rfl
+
+@[simp]
+theorem twoStepInduction_singleton {motive : (l : List α) → Sort*} (x : α) (nil : motive [])
+    (singleton : ∀ x, motive [x])
+    (cons_cons : ∀ x y xs, motive xs → motive (y :: xs) → motive (x :: y :: xs)) :
+    twoStepInduction nil singleton cons_cons [x] = singleton x := rfl
+
+@[simp]
+theorem twoStepInduction_cons_cons {motive : (l : List α) → Sort*} (x y : α) (xs : List α)
+    (nil : motive []) (singleton : ∀ x, motive [x])
+    (cons_cons : ∀ x y xs, motive xs → motive (y :: xs) → motive (x :: y :: xs)) :
+    twoStepInduction nil singleton cons_cons (x :: y :: xs) =
+    cons_cons x y xs (twoStepInduction nil singleton cons_cons xs)
+    (twoStepInduction nil singleton cons_cons (y :: xs)) := rfl
+
 end List
