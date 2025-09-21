@@ -87,17 +87,26 @@ theorem isChain_split {c : α} {l₁ l₂ : List α} :
   | nil | singleton => grind
   | cons_cons a b l₁ IH IH2 => simp only [cons_append, isChain_cons_cons] at IH ⊢; grind
 
+theorem isChain_cons_split {c : α} {l₁ l₂ : List α} :
+    IsChain R (a :: (l₁ ++ c :: l₂)) ↔ IsChain R (a :: (l₁ ++ [c])) ∧ IsChain R (c :: l₂) := by
+  simp_rw [← cons_append, isChain_split (l₂ := l₂)]
 
 @[deprecated (since := "2025-09-19")]
-alias chain_split := isChain_split
+alias chain_split := isChain_cons_split
 
 @[simp]
 theorem isChain_append_cons_cons {b c : α} {l₁ l₂ : List α} :
     IsChain R (l₁ ++ b :: c :: l₂) ↔ IsChain R (l₁ ++ [b]) ∧ R b c ∧ IsChain R (c :: l₂) := by
   rw [isChain_split, isChain_cons_cons]
 
+@[simp]
+theorem isChain_cons_append_cons_cons {a b c : α} {l₁ l₂ : List α} :
+    IsChain R (a :: (l₁ ++ b :: c :: l₂)) ↔
+    IsChain R (a :: (l₁ ++ [b])) ∧ R b c ∧ IsChain R (c :: l₂) := by
+  rw [isChain_cons_split, isChain_cons_cons]
+
 @[deprecated (since := "2025-09-19")]
-alias chain_append_cons_cons := isChain_append_cons_cons
+alias chain_append_cons_cons := isChain_cons_append_cons_cons
 
 theorem isChain_iff_forall_rel_of_append_cons_cons {l : List α} :
     IsChain R l ↔ ∀ ⦃a b l₁ l₂⦄, l = l₁ ++ a :: b :: l₂ → R a b := by
@@ -132,14 +141,28 @@ theorem isChain_map_of_isChain {S : β → β → Prop} (f : α → β) (H : ∀
     {l : List α} (p : IsChain R l) : IsChain S (map f l) :=
   (isChain_map f).2 <| p.imp H
 
-@[deprecated (since := "2025-09-19")]
-alias chain_maps := isChain_map
+theorem isChain_cons_map (f : β → α) {l : List β} {b : β} :
+    IsChain R (f b :: map f l) ↔ IsChain (fun a b : β => R (f a) (f b)) (b :: l) :=
+  isChain_map f (l := b :: l)
+
+theorem isChain_cons_of_isChain_cons_map {S : β → β → Prop} (f : α → β)
+    (H : ∀ a b : α, S (f a) (f b) → R a b)
+    {l : List α} (p : IsChain S (f a :: map f l)) : IsChain R (a :: l) :=
+  ((isChain_cons_map f).1 p).imp H
+
+theorem isChain_cons_map_of_isChain_cons {S : β → β → Prop} (f : α → β)
+    (H : ∀ a b : α, R a b → S (f a) (f b))
+    {l : List α} (p : IsChain R (a :: l)) : IsChain S (f a :: map f l) :=
+  (isChain_cons_map f).2 <| p.imp H
 
 @[deprecated (since := "2025-09-19")]
-alias chain_of_chain_map := isChain_of_isChain_map
+alias chain_map := isChain_cons_map
 
 @[deprecated (since := "2025-09-19")]
-alias chain_map_of_chain := isChain_map_of_isChain
+alias chain_of_chain_map := isChain_cons_of_isChain_cons_map
+
+@[deprecated (since := "2025-09-19")]
+alias chain_map_of_chain := isChain_cons_map_of_isChain_cons
 
 theorem isChain_pmap {p : β → Prop} (f : ∀ b, p b → α) {l : List β} (hl : ∀ b ∈ l, p b) :
     IsChain R (pmap f l hl) ↔ IsChain (fun a b => ∃ ha, ∃ hb, R (f a ha) (f b hb)) l := by
@@ -413,7 +436,7 @@ theorem relationReflTransGen_of_exists_isChain (l : List α) (hl₁ : IsChain r 
 If there is an `r`-chain starting from `a` and ending at `b`, then `a` and `b` are related by the
 reflexive transitive closure of `r`. The converse of `exists_chain_of_relationReflTransGen`.
 -/
-theorem relationReflTransGen_of_exists_chain' (l : List α) (hl₁ : IsChain r (a :: l))
+theorem relationReflTransGen_of_exists_isChain_cons (l : List α) (hl₁ : IsChain r (a :: l))
     (hl₂ : getLast (a :: l) (cons_ne_nil _ _) = b) : Relation.ReflTransGen r a b :=
   IsChain.backwards_cons_induction_head _ l hl₁ hl₂ (fun _ _ => Relation.ReflTransGen.head)
   Relation.ReflTransGen.refl

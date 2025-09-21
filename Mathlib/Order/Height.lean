@@ -60,7 +60,7 @@ def subchain : Set (List α) :=
   { l | l.IsChain (· < ·) ∧ ∀ i ∈ l, i ∈ s }
 
 @[simp]
-theorem nil_mem_subchain : [] ∈ s.subchain := ⟨trivial, fun _ ↦ nofun⟩
+theorem nil_mem_subchain : [] ∈ s.subchain := ⟨.nil, fun _ ↦ nofun⟩
 
 variable {s} {l : List α} {a : α}
 
@@ -197,7 +197,7 @@ theorem chainHeight_image (f : α → β) (hf : ∀ {x y}, x < y ↔ f x < f y) 
       exact ⟨l', h₁, length_map _⟩
     intro l
     induction l with
-    | nil => exact fun _ ↦ ⟨nil, ⟨trivial, fun x h ↦ (not_mem_nil h).elim⟩, rfl⟩
+    | nil => exact fun _ ↦ ⟨nil, ⟨.nil, fun x h ↦ (not_mem_nil h).elim⟩, rfl⟩
     | cons x xs hx =>
       intro h
       rw [cons_mem_subchain_iff] at h
@@ -322,7 +322,7 @@ theorem wellFoundedGT_of_chainHeight_ne_top (s : Set α) (hs : s.chainHeight ≠
   refine ⟨RelEmbedding.wellFounded_iff_isEmpty.2 ⟨fun f ↦ ?_⟩⟩
   refine n.lt_succ_self.not_ge (WithTop.coe_le_coe.1 <| hn.symm ▸ ?_)
   refine le_iSup₂_of_le ((ofFn (n := n.succ) fun i ↦ f i).map Subtype.val)
-    ⟨isChain_map_of_chain' ((↑) : {x // x ∈ s} → α) (fun _ _ ↦ id)
+    ⟨isChain_map_of_isChain ((↑) : {x // x ∈ s} → α) (fun _ _ ↦ id)
       (isChain_iff_pairwise.2 <| pairwise_ofFn.2 fun i j ↦ f.map_rel_iff.2), fun i h ↦ ?_⟩ ?_
   · obtain ⟨a, -, rfl⟩ := mem_map.1 h
     exact a.prop
