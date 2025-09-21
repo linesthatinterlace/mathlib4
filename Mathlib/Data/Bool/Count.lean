@@ -40,13 +40,18 @@ grind_pattern count_false_add_count_true => count true l
 theorem count_true_add_count_false (l : List Bool) : count true l + count false l = length l :=
   count_not_add_count l false
 
-theorem Chain.count_not :
-    ∀ {b : Bool} {l : List Bool}, Chain (· ≠ ·) b l → count (!b) l = count b l + length l % 2
+theorem IsChain.count_not_cons :
+    ∀ {b : Bool} {l : List Bool}, IsChain (· ≠ ·) (b :: l) →
+    count (!b) l = count b l + length l % 2
   | _, [], _h => rfl
   | b, x :: l, h => by
-    obtain rfl : b = !x := Bool.eq_not_iff.2 (rel_of_chain_cons h)
+    obtain rfl : b = !x := Bool.eq_not_iff.2 (rel_of_isChain_cons_cons h)
     rw [Bool.not_not, count_cons_self, count_cons_of_ne x.not_ne_self.symm,
-      Chain.count_not (chain_of_chain_cons h), length, add_assoc, Nat.mod_two_add_succ_mod_two]
+      IsChain.count_not_cons (isChain_of_isChain_cons_cons h), length, add_assoc,
+      Nat.mod_two_add_succ_mod_two]
+
+@[deprecated (since := "2025-09-21")]
+alias Chain.count_not := IsChain.count_not_cons
 
 namespace IsChain
 
@@ -58,7 +63,7 @@ theorem count_not_eq_count (hl : IsChain (· ≠ ·) l) (h2 : Even (length l)) (
   · rfl
   rw [length_cons, Nat.even_add_one, Nat.not_even_iff] at h2
   suffices count (!x) (x :: l) = count x (x :: l) by grind
-  rw [count_cons_of_ne x.not_ne_self.symm, hl.count_not, h2, count_cons_self]
+  rw [count_cons_of_ne x.not_ne_self.symm, hl.count_not_cons, h2, count_cons_self]
 
 theorem count_false_eq_count_true (hl : IsChain (· ≠ ·) l) (h2 : Even (length l)) :
     count false l = count true l :=
@@ -69,9 +74,9 @@ theorem count_not_le_count_add_one (hl : IsChain (· ≠ ·) l) (b : Bool) :
   rcases l with - | ⟨x, l⟩
   · exact zero_le _
   obtain rfl | rfl : b = x ∨ b = !x := by simp only [Bool.eq_not_iff, em]
-  · rw [count_cons_of_ne b.not_ne_self.symm, count_cons_self, hl.count_not, add_assoc]
+  · rw [count_cons_of_ne b.not_ne_self.symm, count_cons_self, hl.count_not_cons, add_assoc]
     omega
-  · rw [Bool.not_not, count_cons_self, count_cons_of_ne x.not_ne_self.symm, hl.count_not]
+  · rw [Bool.not_not, count_cons_self, count_cons_of_ne x.not_ne_self.symm, hl.count_not_cons]
     omega
 
 theorem count_false_le_count_true_add_one (hl : IsChain (· ≠ ·) l) :

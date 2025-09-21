@@ -31,6 +31,9 @@ variable {α : Type u} {β : Type v} {R r : α → α → Prop} {l l₁ l₂ : L
 
 mk_iff_of_inductive_prop List.IsChain List.isChain_iff
 
+theorem isChain_nil : IsChain R [] := .nil
+theorem isChain_singleton (a : α) : IsChain R [a] := .singleton _
+
 theorem isChain_cons_iff (R : α → α → Prop) (a : α) (l : List α) :
     IsChain R (a :: l) ↔ l = [] ∨
     ∃ (b : α), R a b ∧ ∃ (l' : List α), IsChain R (b :: l') ∧ l = b :: l' :=
@@ -80,9 +83,10 @@ theorem isChain_isInfix : ∀ l : List α, IsChain (fun x y => [x, y] <:+: l) l
 
 theorem isChain_split {c : α} {l₁ l₂ : List α} :
     IsChain R (l₁ ++ c :: l₂) ↔ IsChain R (l₁ ++ [c]) ∧ IsChain R (c :: l₂) := by
-  induction l₁ using twoStepInduction  generalizing l₂ with
+  induction l₁ using twoStepInduction generalizing l₂ with
   | nil | singleton => grind
-  | cons_cons a b l₁ IH => simp only [cons_append, isChain_cons_cons] at IH ⊢; grind
+  | cons_cons a b l₁ IH IH2 => simp only [cons_append, isChain_cons_cons] at IH ⊢; grind
+
 
 @[deprecated (since := "2025-09-19")]
 alias chain_split := isChain_split
@@ -101,12 +105,13 @@ theorem isChain_iff_forall_rel_of_append_cons_cons {l : List α} :
   induction l using twoStepInduction with
   | nil | singleton => grind
   | cons_cons head head' tail _ ih =>
-    refine fun h ↦ isChain_cons_cons.mpr ⟨h (nil_append _).symm, ih fun ⦃a b l₁ l₂⦄ eq => ?_⟩
+    refine fun h ↦ isChain_cons_cons.mpr ⟨h (nil_append _).symm, ih _ fun ⦃a b l₁ l₂⦄ eq => ?_⟩
     apply h
     rw [eq, cons_append]
 
 theorem isChain_iff_forall₂ {l : List α} :
-    IsChain R l ↔ Forall₂ R l.dropLast l.tail := by induction l using twoStepInduction <;> simp_all
+    IsChain R l ↔ Forall₂ R l.dropLast l.tail := by
+  induction l using twoStepInduction <;> simp_all
 
 theorem isChain_cons_iff_forall₂ : IsChain R (a :: l) ↔ l = [] ∨ Forall₂ R (a :: dropLast l) l := by
   cases l <;> simp [isChain_iff_forall₂]

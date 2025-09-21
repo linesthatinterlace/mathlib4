@@ -13,8 +13,8 @@ The main results are the following:
 
 - `List.join_splitBy`: the lists in `List.splitBy` join to the original list.
 - `List.nil_notMem_splitBy`: the empty list is not contained in `List.splitBy`.
-- `List.isChain_of_mem_splitBy`: any two adjacent elements in a list in `List.splitBy` are related by
-  the specified relation.
+- `List.isChain_of_mem_splitBy`: any two adjacent elements in a list in
+  `List.splitBy` are related by the specified relation.
 - `List.isChain_getLast_head_splitBy`: the last element of each list in `List.splitBy` is not
   related to the first element of the next list.
 -/

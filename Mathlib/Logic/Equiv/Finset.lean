@@ -80,15 +80,24 @@ theorem raise_lower' : ∀ {l n}, (∀ m ∈ l, n ≤ m) → List.Sorted (· < �
     simp [raise', lower', Nat.sub_add_cancel this,
       raise_lower' (List.rel_of_sorted_cons h₂ : ∀ a ∈ l, m < a) h₂.of_cons]
 
-theorem raise'_chain : ∀ (l) {m n}, m < n → List.Chain (· < ·) m (raise' l n)
-  | [], _, _, _ => List.Chain.nil
-  | _ :: _, _, _, h =>
-    List.Chain.cons (lt_of_lt_of_le h (Nat.le_add_left _ _)) (raise'_chain _ (Nat.lt_succ_self _))
+theorem isChain_raise' : ∀ (l) (n), List.IsChain (· < ·) (raise' l n)
+  | [], _ => .nil
+  | [_], _ => .singleton _
+  | _ :: _ :: _, _ => .cons_cons (by omega) (isChain_raise' (_ :: _) _)
+
+theorem isChain_raise'_cons (l m) : List.IsChain (· < ·) (m :: raise' l (m + 1)) :=
+  isChain_raise' (m :: l) 0
+
+theorem isChain_raise'_cons' (l) {m n} (h : m < n) : List.IsChain (· < ·) (m :: raise' l n) := by
+  rcases Nat.exists_eq_add_of_lt h with ⟨i, rfl⟩
+  exact (isChain_raise'_cons _ _).imp' (fun _ _ => id)
+    (fun _ h => lt_of_le_of_lt (Nat.le_add_right _ _) h)
+
+@[deprecated (since := "2025-09-19")]
+alias raise'_chain := isChain_raise'_cons'
 
 /-- `raise' l n` is a strictly increasing sequence. -/
-theorem raise'_sorted : ∀ l n, List.Sorted (· < ·) (raise' l n)
-  | [], _ => List.sorted_nil
-  | _ :: _, _ => List.chain_iff_pairwise.1 (raise'_chain _ (Nat.lt_succ_self _))
+theorem raise'_sorted (l n) : List.Sorted (· < ·) (raise' l n) := (isChain_raise' _ _).pairwise
 
 /-- Makes `raise' l n` into a finset. Elements are distinct thanks to `raise'_sorted`. -/
 def raise'Finset (l : List ℕ) (n : ℕ) : Finset ℕ :=
