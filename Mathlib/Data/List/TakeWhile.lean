@@ -12,7 +12,7 @@ import Mathlib.Tactic.Set
 namespace List
 
 variable {α : Type*} (p : α → Bool)
-
+alias s
 theorem dropWhile_get_zero_not (l : List α) (hl : 0 < (l.dropWhile p).length) :
     ¬p ((l.dropWhile p).get ⟨0, hl⟩) := by
   induction l with
