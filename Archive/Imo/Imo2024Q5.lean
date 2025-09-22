@@ -338,7 +338,8 @@ lemma Path.firstMonster_eq_of_findFstEq_mem {p : Path N} {m : MonsterData N}
   induction p using Path.tail_induction
   case base p h0 =>
     have hl := p.one_lt_length_cells
-    have adj : Adjacent p.cells[0] p.cells[1] := List.isChain_iff_get.1 p.valid_move_seq 0 (by omega)
+    have adj : Adjacent p.cells[0] p.cells[1] :=
+      List.isChain_iff_get.1 p.valid_move_seq 0 (by omega)
     simp_rw [Adjacent, Nat.dist] at adj
     have hc0 : (p.cells[0].1 : ℕ) = 0 := by
       convert Fin.ext_iff.1 p.head_first_row
@@ -446,7 +447,7 @@ def Path.reflect (p : Path N) : Path N where
     rw [List.getLast_map]
     exact p.last_last_row
   valid_move_seq := by
-    refine List.isChain_map_of_chain' _ ?_ p.valid_move_seq
+    refine List.isChain_map_of_isChain _ ?_ p.valid_move_seq
     intro x y h
     simp_rw [Adjacent, Nat.dist, Cell.reflect, Fin.rev] at h ⊢
     omega
