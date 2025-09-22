@@ -88,13 +88,12 @@ theorem isChain_raise' : ∀ (l) (n), List.IsChain (· < ·) (raise' l n)
 theorem isChain_raise'_cons (l m) : List.IsChain (· < ·) (m :: raise' l (m + 1)) :=
   isChain_raise' (m :: l) 0
 
-theorem isChain_raise'_cons' (l) {m n} (h : m < n) : List.IsChain (· < ·) (m :: raise' l n) := by
-  rcases Nat.exists_eq_add_of_lt h with ⟨i, rfl⟩
-  exact (isChain_raise'_cons _ _).imp' (fun _ _ => id)
-    (fun _ h => lt_of_le_of_lt (Nat.le_add_right _ _) h)
+theorem isChain_raise'_cons_of_lt (l) {m n} (h : m < n) :
+    List.IsChain (· < ·) (m :: raise' l n) := by
+  unfold raise'; cases l with grind [isChain_raise'_cons]
 
 @[deprecated (since := "2025-09-19")]
-alias raise'_chain := isChain_raise'_cons'
+alias raise'_chain := isChain_raise'_cons_of_lt
 
 /-- `raise' l n` is a strictly increasing sequence. -/
 theorem raise'_sorted (l n) : List.Sorted (· < ·) (raise' l n) := (isChain_raise' _ _).pairwise
