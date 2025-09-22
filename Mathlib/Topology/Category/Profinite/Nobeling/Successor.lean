@@ -459,7 +459,7 @@ theorem Products.max_eq_eval [Inhabited I] (l : Products I) (hl : l.val ≠ [])
     intro i hi
     simp only [SwapTrue, @eq_comm _ (x.val i), ite_eq_right_iff, ord_term ho]
     rintro rfl
-    exact ((List.Chain.rel hlc hi).ne rfl).elim
+    exact ((List.IsChain.rel_cons hlc hi).ne rfl).elim
   have H : (∀ i, i ∈ l.Tail.val → (x.val i = true)) =
       (∀ i, i ∈ l.Tail.val → (SwapTrue o x.val i = true)) := by
     apply forall_congr; intro i; apply forall_congr; intro hi; rw [hi' i hi]

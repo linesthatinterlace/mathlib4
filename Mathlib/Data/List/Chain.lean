@@ -164,25 +164,41 @@ alias chain_of_chain_map := isChain_cons_of_isChain_cons_map
 @[deprecated (since := "2025-09-19")]
 alias chain_map_of_chain := isChain_cons_map_of_isChain_cons
 
-theorem isChain_pmap {p : β → Prop} (f : ∀ b, p b → α) {l : List β} (hl : ∀ b ∈ l, p b) :
-    IsChain R (pmap f l hl) ↔ IsChain (fun a b => ∃ ha, ∃ hb, R (f a ha) (f b hb)) l := by
+theorem isChain_pmap {S : β → β → Prop} {p : α → Prop} (f : ∀ a, p a → β) {l : List α}
+    (hl : ∀ a ∈ l, p a) : IsChain S (pmap f l hl) ↔
+    IsChain (fun a b => ∃ ha, ∃ hb, S (f a ha) (f b hb)) l := by
   induction l using twoStepInduction <;> grind
 
 theorem isChain_pmap_of_isChain {S : β → β → Prop} {p : α → Prop} {f : ∀ a, p a → β}
     (H : ∀ a b ha hb, R a b → S (f a ha) (f b hb)) {l : List α} (hl₁ : IsChain R l)
     (hl₂ : ∀ a ∈ l, p a) : IsChain S (pmap f l hl₂) := (isChain_pmap f _).2 <|
-  hl₁.imp_of_mem (fun _ _ ha hb hab => ⟨hl₂ _ ha, ⟨hl₂ _ hb, H _ _ _ _ hab⟩⟩)
+  hl₁.imp_of_mem (by grind)
 
 theorem isChain_of_isChain_pmap {S : β → β → Prop} {p : α → Prop} (f : ∀ a, p a → β) {l : List α}
     (hl₁ : ∀ a ∈ l, p a) (hl₂ : IsChain S (pmap f l hl₁))
     (H : ∀ a b ha hb, S (f a ha) (f b hb) → R a b) : IsChain R l :=
-  ((isChain_pmap f _).1 hl₂).imp fun _ _ ⟨_, _, hab⟩ => H _ _ _ _ hab
+  ((isChain_pmap f _).1 hl₂).imp (by grind)
+
+theorem isChain_cons_pmap {p : β → Prop} (f : ∀ b, p b → α) {l : List β} (hl : ∀ b ∈ l, p b)
+    {a} (ha) : IsChain R (f a ha :: pmap f l hl) ↔
+    IsChain (fun a b => ∃ ha, ∃ hb, R (f a ha) (f b hb)) (a :: l) :=
+  isChain_pmap (l := a :: _) f (by grind)
+
+theorem isChain_cons_pmap_of_isChain_cons {S : β → β → Prop} {p : α → Prop} {f : ∀ a, p a → β}
+    (H : ∀ a b ha hb, R a b → S (f a ha) (f b hb)) {l : List α} {a} (ha)
+    (hl₁ : IsChain R (a :: l)) (hl₂ : ∀ a ∈ l, p a) : IsChain S (f a ha :: pmap f l hl₂) :=
+    (isChain_cons_pmap f _ _).2 <| hl₁.imp_of_mem (by grind)
+
+theorem isChain_cons_of_isChain_cons_pmap {S : β → β → Prop} {p : α → Prop} (f : ∀ a, p a → β)
+    {l : List α} (hl₁ : ∀ a ∈ l, p a) {a} (ha) (hl₂ : IsChain S (f a ha :: pmap f l hl₁))
+    (H : ∀ a b ha hb, S (f a ha) (f b hb) → R a b) : IsChain R (a :: l) :=
+  ((isChain_cons_pmap f _ _).1 hl₂).imp (by grind)
 
 @[deprecated (since := "2025-09-19")]
-alias chain_pmap_of_chain := isChain_of_isChain_pmap
+alias chain_pmap_of_chain := isChain_cons_pmap_of_isChain_cons
 
 @[deprecated (since := "2025-09-19")]
-alias chain_of_chain_pmap := isChain_of_isChain_pmap
+alias chain_of_chain_pmap := isChain_cons_of_isChain_cons_pmap
 
 @[deprecated (since := "2025-09-19")]
 alias Chain.pairwise := IsChain.pairwise
@@ -202,6 +218,9 @@ protected theorem IsChain.rel_cons [Trans R R R] (hl : (a :: l).IsChain R) (hb :
     R a b := by
   rw [isChain_iff_pairwise] at hl
   exact rel_of_pairwise_cons hl hb
+
+@[deprecated (since := "2025-09-19")]
+alias Chain.rel:= IsChain.rel_cons
 
 @[deprecated (since := "2025-08-12")] alias IsChain.cons := IsChain.cons_cons
 
@@ -349,6 +368,9 @@ theorem exists_isChain_cons_of_relationReflTransGen (h : Relation.ReflTransGen r
     refine ⟨d :: l, .cons_cons e hl₁, ?_⟩
     rwa [getLast_cons_cons]
 
+@[deprecated (since := "2025-09-22")]
+alias exists_chain_of_relationReflTransGen := exists_isChain_cons_of_relationReflTransGen
+
 /-- If `a` and `b` are related by the reflexive transitive closure of `r`, then there is an
 `r`-chain starting from `a` and ending on `b`.
 -/
@@ -434,7 +456,7 @@ theorem relationReflTransGen_of_exists_isChain (l : List α) (hl₁ : IsChain r 
 
 /--
 If there is an `r`-chain starting from `a` and ending at `b`, then `a` and `b` are related by the
-reflexive transitive closure of `r`. The converse of `exists_chain_of_relationReflTransGen`.
+reflexive transitive closure of `r`.
 -/
 theorem relationReflTransGen_of_exists_isChain_cons (l : List α) (hl₁ : IsChain r (a :: l))
     (hl₂ : getLast (a :: l) (cons_ne_nil _ _) = b) : Relation.ReflTransGen r a b :=
