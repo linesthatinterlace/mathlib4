@@ -222,7 +222,7 @@ protected theorem IsChain.rel_cons [Trans R R R] (hl : (a :: l).IsChain R) (hb :
 @[deprecated (since := "2025-09-19")]
 alias Chain.rel:= IsChain.rel_cons
 
-@[deprecated (since := "2025-08-12")] alias IsChain.cons := IsChain.cons_cons
+@[deprecated (since := "2025-08-12")] alias IsChain.cons := isChain_cons_cons
 
 theorem IsChain.tail {l : List α} : IsChain R l → IsChain R l.tail := by
   induction l using twoStepInduction <;> grind
