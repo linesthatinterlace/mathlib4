@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Mario Carneiro
 -/
 import Mathlib.Order.Compare
-import Mathlib.Data.List.Defs
 import Mathlib.Data.Nat.PSub
 import Mathlib.Data.Option.Basic
 

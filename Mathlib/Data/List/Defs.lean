@@ -8,7 +8,7 @@ import Mathlib.Control.Functor
 import Mathlib.Data.SProd
 import Mathlib.Util.CompileInductive
 import Batteries.Tactic.Lint.Basic
-import Batteries.Data.List.Lemmas
+import Batteries.Data.List.Basic
 import Batteries.Logic
 
 /-!
