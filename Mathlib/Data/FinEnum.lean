@@ -46,8 +46,8 @@ def ofNodupList [DecidableEq α] (xs : List α) (h : ∀ x : α, x ∈ xs) (h' :
     FinEnum α where
   card := xs.length
   equiv :=
-    ⟨fun x => ⟨xs.idxOf x, by rw [List.idxOf_lt_length_iff]; apply h⟩, xs.get, fun x => by simp,
-      fun i => by ext; simp [List.idxOf_getElem h']⟩
+    ⟨fun x => ⟨xs.idxOf x, List.idxOf_lt_length_of_mem <| h _⟩, xs.get,
+      fun x => by simp, fun i => by simp [h']⟩
 
 /-- create a `FinEnum` instance from an exhaustive list; duplicates are removed -/
 def ofList [DecidableEq α] (xs : List α) (h : ∀ x : α, x ∈ xs) : FinEnum α :=
